@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>STMS Camera</title>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background: #f2f5f7;
+      text-align: center;
+    }
+
+    .box {
+      max-width: 500px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 3px 15px rgba(0,0,0,0.15);
+    }
+
+    h1 {
+      margin-top: 0;
+    }
+
+    video {
+      width: 100%;
+      max-width: 420px;
+      border-radius: 12px;
+      background: #000;
+      margin-top: 15px;
+    }
+
+    canvas {
+      display: none;
+    }
+
+    img {
+      width: 100%;
+      max-width: 420px;
+      border-radius: 12px;
+      margin-top: 15px;
+    }
+
+    button {
+      width: 100%;
+      max-width: 420px;
+      padding: 14px;
+      margin-top: 12px;
+      border: none;
+      border-radius: 10px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    #startBtn {
+      background: #1976d2;
+      color: white;
+    }
+
+    #captureBtn {
+      background: #2e7d32;
+      color: white;
+    }
+
+    #retakeBtn {
+      background: #ef6c00;
+      color: white;
+    }
+
+    #useBtn {
+      background: #6a1b9a;
+      color: white;
+    }
+
+    #status {
+      margin-top: 15px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="box">
+
+  <h1>ITI VALOD</h1>
+  <h2>STMS Camera</h2>
+
+  <p id="status">Camera શરૂ કરવા માટે નીચેનું button દબાવો.</p>
+
+  <video id="video" autoplay playsinline muted></video>
+
+  <canvas id="canvas"></canvas>
+
+  <img id="preview" style="display:none;">
+
+  <button id="startBtn" onclick="startCamera()">
+    📷 Open Camera
+  </button>
+
+  <button id="captureBtn" onclick="capturePhoto()" style="display:none;">
+    📸 Capture Photo
+  </button>
+
+  <button id="retakeBtn" onclick="retakePhoto()" style="display:none;">
+    🔄 Retake
+  </button>
+
+  <button id="useBtn" onclick="usePhoto()" style="display:none;">
+    ✅ Use Photo
+  </button>
+
+</div>
+
+<script>
+
+let stream = null;
+let capturedImage = null;
+
+async function startCamera() {
+
+  const status = document.getElementById("status");
+  const video = document.getElementById("video");
+
+  try {
+
+    status.innerText = "Camera permission માંગવામાં આવી રહી છે...";
+
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: "user",
+        width: {
+          ideal: 1280
+        },
+        height: {
+          ideal: 720
+        }
+      },
+      audio: false
+    });
+
+    video.srcObject = stream;
+
+    await video.play();
+
+    status.innerText = "✅ Camera ચાલુ છે. હવે Capture Photo દબાવો.";
+
+    document.getElementById("startBtn").style.display = "none";
+    document.getElementById("captureBtn").style.display = "block";
+
+  } catch (error) {
+
+    console.error(error);
+
+    status.innerText =
+      "❌ Camera ચાલુ થઈ શક્યો નથી. Browserમાં Camera Permission Allow કરો.";
+
+    alert(
+      "Camera ચાલુ થઈ શક્યો નથી.\n\n" +
+      "કૃપા કરીને Browserમાં Camera Permission = Allow કરો."
+    );
+  }
+}
+
+
+function capturePhoto() {
+
+  const video = document.getElementById("video");
+  const canvas = document.getElementById("canvas");
+  const preview = document.getElementById("preview");
+  const status = document.getElementById("status");
+
+  if (!video.videoWidth || !video.videoHeight) {
+
+    alert("Camera હજુ તૈયાર નથી. થોડી વાર રાહ જુઓ.");
+
+    return;
+  }
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+
+  const context = canvas.getContext("2d");
+
+  context.drawImage(
+    video,
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
+
+  capturedImage = canvas.toDataURL(
+    "image/jpeg",
+    0.85
+  );
+
+  preview.src = capturedImage;
+  preview.style.display = "block";
+
+  video.style.display = "none";
+
+  document.getElementById("captureBtn").style.display = "none";
+  document.getElementById("retakeBtn").style.display = "block";
+  document.getElementById("useBtn").style.display = "block";
+
+  status.innerText = "✅ Photo Capture થઈ ગયો.";
+}
+
+
+function retakePhoto() {
+
+  const video = document.getElementById("video");
+  const preview = document.getElementById("preview");
+  const status = document.getElementById("status");
+
+  capturedImage = null;
+
+  preview.src = "";
+  preview.style.display = "none";
+
+  video.style.display = "block";
+
+  document.getElementById("retakeBtn").style.display = "none";
+  document.getElementById("useBtn").style.display = "none";
+  document.getElementById("captureBtn").style.display = "block";
+
+  status.innerText = "ફરીથી Photo Capture કરો.";
+}
+
+
+function usePhoto() {
+
+  if (!capturedImage) {
+
+    alert("પહેલા Photo Capture કરો.");
+
+    return;
+  }
+
+  /*
+   * જો આ Camera Page Attendance Pageમાંથી
+   * નવી windowમાં ખોલવામાં આવ્યું હશે,
+   * તો Photo Attendance Pageને મોકલાશે.
+   */
+
+  if (window.opener) {
+
+    window.opener.postMessage(
+      {
+        type: "ITI_VALOD_FACE_CAPTURE",
+        image: capturedImage
+      },
+      "*"
+    );
+
+    document.getElementById("status").innerText =
+      "✅ Photo Attendance Page પર મોકલાઈ રહ્યો છે.";
+
+    setTimeout(function() {
+
+      window.close();
+
+    }, 1000);
+
+  } else {
+
+    /*
+     * હાલમાં standalone test માટે
+     * Photo browser storageમાં પણ રાખીએ છીએ.
+     */
+
+    localStorage.setItem(
+      "ITI_VALOD_FACE_CAPTURE",
+      capturedImage
+    );
+
+    document.getElementById("status").innerText =
+      "✅ Photo Capture થયો અને Save થયો.";
+
+    alert(
+      "Photo Capture સફળ થયો.\n\n" +
+      "આ Camera Test સફળ છે."
+    );
+  }
+}
+
+
+window.addEventListener("beforeunload", function() {
+
+  if (stream) {
+
+    stream.getTracks().forEach(function(track) {
+
+      track.stop();
+
+    });
+  }
+
+});
+
+</script>
+
+</body>
+</html>
