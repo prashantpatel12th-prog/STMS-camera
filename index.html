@@ -1,188 +1,208 @@
 <!DOCTYPE html>
 <html>
-
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<meta charset="UTF-8">
+  <title>ITI VALOD Face Camera</title>
 
-<meta name="viewport"
-      content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 
-<title>STMS Camera</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
 
-<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    body {
+      margin: 0;
+      padding: 15px;
+      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+      text-align: center;
+    }
 
-<style>
+    .container {
+      max-width: 480px;
+      margin: auto;
+      background: white;
+      padding: 15px;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.12);
+    }
 
-body {
-  margin: 0;
-  padding: 20px;
-  font-family: Arial, sans-serif;
-  background: #f2f5f7;
-  text-align: center;
-}
+    h2 {
+      margin: 5px 0;
+      color: #1f2937;
+    }
 
-.box {
-  max-width: 500px;
-  margin: auto;
-  background: white;
-  padding: 20px;
-  border-radius: 15px;
-  box-shadow: 0 3px 15px rgba(0,0,0,0.15);
-}
+    #modeText {
+      font-size: 14px;
+      margin: 8px 0 12px;
+      font-weight: bold;
+    }
 
-h1 {
-  margin-top: 0;
-}
+    #status {
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      font-size: 14px;
+      font-weight: bold;
+    }
 
-video {
-  width: 100%;
-  max-width: 420px;
-  border-radius: 12px;
-  background: #000;
-  margin-top: 15px;
-}
+    .info {
+      background: #e0f2fe;
+      color: #075985;
+    }
 
-canvas {
-  display: none;
-}
+    .success {
+      background: #dcfce7;
+      color: #166534;
+    }
 
-img {
-  width: 100%;
-  max-width: 420px;
-  border-radius: 12px;
-  margin-top: 15px;
-}
+    .error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
 
-button {
-  width: 100%;
-  max-width: 420px;
-  padding: 14px;
-  margin-top: 12px;
-  border: none;
-  border-radius: 10px;
-  font-size: 18px;
-  cursor: pointer;
-}
+    .warning {
+      background: #fef3c7;
+      color: #92400e;
+    }
 
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+    .camera-box {
+      position: relative;
+      width: 100%;
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+    }
 
-#startBtn {
-  background: #1976d2;
-  color: white;
-}
+    #video {
+      width: 100%;
+      display: block;
+      transform: scaleX(-1);
+    }
 
-#captureBtn {
-  background: #2e7d32;
-  color: white;
-}
+    #overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
 
-#retakeBtn {
-  background: #ef6c00;
-  color: white;
-}
+    #photoPreview {
+      width: 100%;
+      display: none;
+      border-radius: 12px;
+      margin-top: 10px;
+    }
 
-#useBtn {
-  background: #6a1b9a;
-  color: white;
-}
+    .buttons {
+      margin-top: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
 
-#status {
-  margin-top: 15px;
-  font-weight: bold;
-  line-height: 1.5;
-}
+    button {
+      width: 100%;
+      padding: 13px;
+      border: none;
+      border-radius: 9px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
 
-#faceStatus {
-  margin-top: 10px;
-  padding: 12px;
-  border-radius: 8px;
-  background: #f1f1f1;
-  font-size: 15px;
-  line-height: 1.5;
-}
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
 
-#connectionStatus {
-  margin-top: 12px;
-  padding: 12px;
-  border-radius: 8px;
-  background: #fff3cd;
-  font-size: 14px;
-  line-height: 1.5;
-  word-break: break-word;
-}
+    #captureBtn {
+      background: #2563eb;
+      color: white;
+    }
 
-.info {
-  font-size: 13px;
-  color: #555;
-  margin-top: 10px;
-}
+    #usePhotoBtn {
+      background: #16a34a;
+      color: white;
+    }
 
-</style>
+    #retakeBtn {
+      background: #f59e0b;
+      color: white;
+    }
 
+    #closeBtn {
+      background: #dc2626;
+      color: white;
+    }
+
+    #distanceBox {
+      margin-top: 12px;
+      font-size: 14px;
+      font-weight: bold;
+      color: #374151;
+    }
+
+    .trainee-info {
+      font-size: 13px;
+      color: #4b5563;
+      margin-bottom: 10px;
+      word-break: break-word;
+    }
+  </style>
 </head>
-
 
 <body>
 
-<div class="box">
+<div class="container">
 
-  <h1>ITI VALOD</h1>
+  <h2>ITI VALOD</h2>
 
-  <h2>STMS Camera</h2>
-
-  <p id="status">
-    Face Detection System શરૂ થઈ રહ્યું છે...
-  </p>
-
-  <div id="faceStatus">
-    ⏳ Face AI Model લોડ થઈ રહ્યું છે...
+  <div id="modeText">
+    Face Verification
   </div>
 
-  <div id="connectionStatus">
-    🔄 Parent Page સાથે connection તપાસી રહ્યા છીએ...
+  <div class="trainee-info">
+    Trainee:
+    <span id="traineeName">Loading...</span>
   </div>
 
-  <video id="video"
-         autoplay
-         playsinline
-         muted>
-  </video>
+  <div id="status" class="info">
+    Connecting to ITI VALOD Attendance...
+  </div>
 
-  <canvas id="canvas"></canvas>
+  <div class="camera-box">
+    <video id="video" autoplay muted playsinline></video>
+    <canvas id="overlay"></canvas>
+  </div>
 
-  <img id="preview"
-       style="display:none;">
+  <img id="photoPreview" alt="Captured Photo">
 
-  <button id="startBtn"
-          onclick="startCamera()"
-          disabled>
-    📷 Open Camera
-  </button>
+  <div id="distanceBox"></div>
 
-  <button id="captureBtn"
-          onclick="capturePhoto()"
-          style="display:none;">
-    📸 Capture / Verify Face
-  </button>
+  <div class="buttons">
 
-  <button id="retakeBtn"
-          onclick="retakePhoto()"
-          style="display:none;">
-    🔄 Retake
-  </button>
+    <button id="captureBtn" disabled>
+      Verify Face
+    </button>
 
-  <button id="useBtn"
-          onclick="usePhoto()"
-          style="display:none;">
-    ✅ Use Photo
-  </button>
+    <button id="usePhotoBtn" style="display:none;">
+      Use Photo
+    </button>
 
-  <div class="info">
-    Attendance modeમાં Registered Face સાથે Match થયા પછી જ Photo સ્વીકારવામાં આવશે.
+    <button id="retakeBtn" style="display:none;">
+      Retake Photo
+    </button>
+
+    <button id="closeBtn">
+      Close Camera
+    </button>
+
   </div>
 
 </div>
@@ -190,334 +210,636 @@ button:disabled {
 
 <script>
 
-/* =========================================================
-   CONFIGURATION
-========================================================= */
-
-const CAMERA_ORIGIN =
-  "https://prashantpatel12th-prog.github.io";
-
-const ALLOWED_PARENT_ORIGINS = [
-  "https://script.google.com",
-  "https://script.googleusercontent.com"
-];
-
-const MODEL_URL =
-  "https://justadudewhohacks.github.io/face-api.js/models";
-
-const FACE_MATCH_THRESHOLD = 0.55;
+  /****************************************************
+   * ITI VALOD FACE CAMERA
+   * STABLE VERSION
+   *
+   * Based on previously working verification code.
+   *
+   * Supports:
+   * 1. Registration Mode
+   * 2. Verification Mode
+   * 3. Registered Face Processing
+   * 4. Face Descriptor Matching
+   * 5. Parent Window Communication
+   ****************************************************/
 
 
-/* =========================================================
-   GLOBAL VARIABLES
-========================================================= */
+  /* ==================================================
+     CONFIGURATION
+     ================================================== */
 
-let stream = null;
+  const CAMERA_PAGE_ORIGIN =
+    "https://prashantpatel12th-prog.github.io";
 
-let capturedImage = null;
+  const MODEL_URL =
+    "https://justadudewhohacks.github.io/face-api.js/models";
 
-let faceModelsLoaded = false;
-
-let registeredFaceData = null;
-
-let registeredDescriptor = null;
-
-let registeredFaceReceived = false;
-
-let faceVerified = false;
-
-let faceVerificationDistance = null;
-
-let parentOrigin = null;
+  const FACE_DISTANCE_THRESHOLD = 0.55;
 
 
-/* =========================================================
-   URL PARAMETERS
-========================================================= */
+  /* ==================================================
+     DOM
+     ================================================== */
 
-const urlParams =
-  new URLSearchParams(window.location.search);
+  const video =
+    document.getElementById("video");
 
-const cameraMode =
-  urlParams.get("mode") || "registration";
+  const overlay =
+    document.getElementById("overlay");
 
-const traineeKey =
-  urlParams.get("trainee") || "";
+  const statusBox =
+    document.getElementById("status");
 
+  const captureBtn =
+    document.getElementById("captureBtn");
 
-/* =========================================================
-   ELEMENTS
-========================================================= */
+  const usePhotoBtn =
+    document.getElementById("usePhotoBtn");
 
-const status =
-  document.getElementById("status");
+  const retakeBtn =
+    document.getElementById("retakeBtn");
 
-const faceStatus =
-  document.getElementById("faceStatus");
+  const closeBtn =
+    document.getElementById("closeBtn");
 
-const connectionStatus =
-  document.getElementById("connectionStatus");
+  const photoPreview =
+    document.getElementById("photoPreview");
 
-const startBtn =
-  document.getElementById("startBtn");
+  const distanceBox =
+    document.getElementById("distanceBox");
 
-const captureBtn =
-  document.getElementById("captureBtn");
+  const traineeNameBox =
+    document.getElementById("traineeName");
 
-const retakeBtn =
-  document.getElementById("retakeBtn");
-
-const useBtn =
-  document.getElementById("useBtn");
-
-const video =
-  document.getElementById("video");
-
-const canvas =
-  document.getElementById("canvas");
-
-const preview =
-  document.getElementById("preview");
+  const modeText =
+    document.getElementById("modeText");
 
 
-/* =========================================================
-   FIND PARENT ORIGIN
-========================================================= */
+  /* ==================================================
+     STATE
+     ================================================== */
 
-function detectParentOrigin() {
+  let parentWindow = null;
+  let parentOrigin = null;
 
-  try {
+  let selectedTrainee = "";
+  let selectedTraineeId = "";
 
-    if (
-      document.referrer &&
-      document.referrer.startsWith("https://")
-    ) {
+  let cameraStream = null;
 
-      const refUrl =
-        new URL(document.referrer);
+  let faceAIReady = false;
+  let cameraReadySent = false;
 
-      if (
-        ALLOWED_PARENT_ORIGINS.includes(
-          refUrl.origin
-        )
-      ) {
+  let registeredDescriptor = null;
+  let registeredFaceLoaded = false;
 
-        parentOrigin =
-          refUrl.origin;
+  let verificationInProgress = false;
 
-        return;
-      }
+  let capturedImageData = "";
+
+  let isRegistrationMode = false;
+
+
+  /* ==================================================
+     URL PARAMETERS
+     ================================================== */
+
+  const urlParams =
+    new URLSearchParams(window.location.search);
+
+  selectedTrainee =
+    urlParams.get("trainee") || "";
+
+  selectedTraineeId =
+    urlParams.get("traineeId") || "";
+
+  const mode =
+    (urlParams.get("mode") || "verification")
+      .toLowerCase();
+
+  isRegistrationMode =
+    mode === "registration";
+
+
+  traineeNameBox.textContent =
+    selectedTrainee || "Unknown";
+
+
+  if (isRegistrationMode) {
+
+    modeText.textContent =
+      "Face Registration";
+
+    captureBtn.textContent =
+      "Capture Photo";
+
+  } else {
+
+    modeText.textContent =
+      "Face Verification";
+
+    captureBtn.textContent =
+      "Verify Face";
+  }
+
+
+  /* ==================================================
+     STATUS
+     ================================================== */
+
+  function setStatus(message, type) {
+
+    statusBox.textContent = message;
+
+    statusBox.className = "";
+
+    if (type) {
+      statusBox.classList.add(type);
+    }
+  }
+
+
+  /* ==================================================
+     PARENT ORIGIN VALIDATION
+     ================================================== */
+
+  function isValidParentOrigin(origin) {
+
+    if (!origin) {
+      return false;
     }
 
-  } catch(error) {
-
-    console.log(
-      "Referrer origin detection error:",
-      error
+    return (
+      origin === "https://script.google.com" ||
+      origin === "https://script.googleusercontent.com" ||
+      origin.endsWith(".googleusercontent.com")
     );
-
   }
 
-}
 
+  /* ==================================================
+     FIND PARENT WINDOW
+     ================================================== */
 
-/* =========================================================
-   GET PARENT WINDOW
-========================================================= */
+  function detectParentWindow() {
 
-function getParentWindow() {
+    try {
 
-  if (window.opener) {
-    return window.opener;
-  }
+      if (
+        window.opener &&
+        !window.opener.closed
+      ) {
 
-  return null;
+        parentWindow =
+          window.opener;
 
-}
+        return true;
+      }
 
+    } catch (error) {
 
-/* =========================================================
-   SEND MESSAGE TO PARENT
-========================================================= */
-
-function sendToParent(message) {
-
-  const parent =
-    getParentWindow();
-
-  if (!parent) {
-
-    connectionStatus.innerText =
-      "⚠️ Parent Page સાથે opener connection મળ્યું નથી.";
+      console.warn(
+        "window.opener detection failed",
+        error
+      );
+    }
 
     return false;
   }
 
 
-  let targetOrigin =
-    parentOrigin;
+  /* ==================================================
+     SEND MESSAGE TO ATTENDANCE PAGE
+     ================================================== */
 
-
-  if (
-    !targetOrigin ||
-    !ALLOWED_PARENT_ORIGINS.includes(
-      targetOrigin
-    )
-  ) {
-
-    targetOrigin =
-      "https://script.google.com";
-
-  }
-
-
-  try {
-
-    parent.postMessage(
-      message,
-      targetOrigin
-    );
-
-    console.log(
-      "MESSAGE SENT:",
-      message,
-      "TARGET:",
-      targetOrigin
-    );
-
-    return true;
-
-  } catch(error) {
-
-    console.error(
-      "Primary message error:",
-      error
-    );
-
-  }
-
-
-  /*
-   * Fallback
-   */
-
-  const alternateOrigin =
-    targetOrigin ===
-    "https://script.google.com"
-      ? "https://script.googleusercontent.com"
-      : "https://script.google.com";
-
-
-  try {
-
-    parent.postMessage(
-      message,
-      alternateOrigin
-    );
-
-    console.log(
-      "MESSAGE SENT FALLBACK:",
-      alternateOrigin
-    );
-
-    return true;
-
-  } catch(error) {
-
-    console.error(
-      "Fallback message error:",
-      error
-    );
-
-  }
-
-
-  return false;
-
-}
-
-
-/* =========================================================
-   PAGE LOAD
-========================================================= */
-
-window.addEventListener(
-  "load",
-  async function() {
-
-    detectParentOrigin();
+  function sendToParent(message) {
 
     if (
-      cameraMode ===
-      "verification"
+      !parentWindow ||
+      !parentOrigin
     ) {
+      console.warn(
+        "Parent window/origin not ready",
+        message
+      );
 
-      status.innerText =
-        "🔐 Attendance Face Verification Mode";
-
-      faceStatus.innerText =
-        "⏳ Registered Faceની રાહ જોઈ રહ્યા છીએ...";
-
-    } else {
-
-      status.innerText =
-        "📸 Face Registration Mode";
-
-      faceStatus.innerText =
-        "⏳ Face AI Model લોડ થઈ રહ્યું છે...";
-
+      return false;
     }
 
+    try {
 
-    connectionStatus.innerText =
-      "🔄 Parent Attendance Page સાથે connection તપાસી રહ્યા છીએ...";
+      parentWindow.postMessage(
+        message,
+        parentOrigin
+      );
 
+      console.log(
+        "Sent to parent:",
+        message
+      );
 
-    /*
-     * Parentને તરત connection signal
-     */
+      return true;
 
-    sendCameraConnected();
+    } catch (error) {
 
+      console.error(
+        "Parent message error:",
+        error
+      );
 
-    await loadFaceModels();
-
+      return false;
+    }
   }
-);
 
 
-/* =========================================================
-   SEND CAMERA CONNECTED
-========================================================= */
+  /* ==================================================
+     CAMERA CONNECTED
+     ================================================== */
 
-function sendCameraConnected() {
+  function sendCameraConnected() {
 
-  sendToParent({
+    sendToParent({
 
-    type:
-      "ITI_VALOD_CAMERA_CONNECTED",
+      type:
+        "ITI_VALOD_CAMERA_CONNECTED",
 
-    trainee:
-      traineeKey,
+      trainee:
+        selectedTrainee,
 
-    mode:
-      cameraMode
+      traineeId:
+        selectedTraineeId,
 
-  });
+      mode:
+        isRegistrationMode
+          ? "registration"
+          : "verification"
+    });
+  }
 
-}
+
+  /* ==================================================
+     CAMERA READY
+     ================================================== */
+
+  function sendCameraReady() {
+
+    if (cameraReadySent) {
+      return;
+    }
+
+    if (!faceAIReady) {
+      return;
+    }
+
+    cameraReadySent = true;
+
+    sendToParent({
+
+      type:
+        "ITI_VALOD_CAMERA_READY",
+
+      trainee:
+        selectedTrainee,
+
+      traineeId:
+        selectedTraineeId,
+
+      mode:
+        isRegistrationMode
+          ? "registration"
+          : "verification"
+    });
+  }
 
 
-/* =========================================================
-   LOAD FACE API MODELS
-========================================================= */
+  /* ==================================================
+     REGISTERED FACE READY
+     ================================================== */
 
-async function loadFaceModels() {
+  function sendRegisteredFaceReady() {
 
-  try {
+    sendToParent({
 
-    faceStatus.innerText =
-      "⏳ Face Detection Model લોડ થઈ રહ્યું છે...";
+      type:
+        "ITI_VALOD_REGISTERED_FACE_READY",
+
+      trainee:
+        selectedTrainee,
+
+      traineeId:
+        selectedTraineeId,
+
+      ready: true
+    });
+  }
+
+
+  /* ==================================================
+     MESSAGE RECEIVER
+     ================================================== */
+
+  window.addEventListener(
+    "message",
+    async function(event) {
+
+      console.log(
+        "Message received:",
+        event.origin,
+        event.data
+      );
+
+
+      /* ----------------------------------------------
+         Validate sender
+         ---------------------------------------------- */
+
+      if (
+        !isValidParentOrigin(event.origin)
+      ) {
+
+        console.warn(
+          "Rejected message origin:",
+          event.origin
+        );
+
+        return;
+      }
+
+
+      /* ----------------------------------------------
+         Save parent connection
+         ---------------------------------------------- */
+
+      parentWindow =
+        event.source;
+
+      parentOrigin =
+        event.origin;
+
+
+      /* ----------------------------------------------
+         CAMERA INIT
+         ---------------------------------------------- */
+
+      if (
+        event.data &&
+        event.data.type ===
+          "ITI_VALOD_CAMERA_INIT"
+      ) {
+
+        selectedTrainee =
+          event.data.trainee ||
+          selectedTrainee;
+
+        selectedTraineeId =
+          event.data.traineeId ||
+          selectedTraineeId;
+
+        traineeNameBox.textContent =
+          selectedTrainee || "Unknown";
+
+
+        if (
+          event.data.mode ===
+          "registration"
+        ) {
+
+          isRegistrationMode = true;
+
+          modeText.textContent =
+            "Face Registration";
+
+          captureBtn.textContent =
+            "Capture Photo";
+
+        } else {
+
+          isRegistrationMode = false;
+
+          modeText.textContent =
+            "Face Verification";
+
+          captureBtn.textContent =
+            "Verify Face";
+        }
+
+
+        sendCameraConnected();
+
+        sendCameraReady();
+
+        return;
+      }
+
+
+      /* ----------------------------------------------
+         REGISTERED FACE
+         ---------------------------------------------- */
+
+      if (
+        event.data &&
+        event.data.type ===
+          "ITI_VALOD_REGISTERED_FACE"
+      ) {
+
+        console.log(
+          "Registered Face received"
+        );
+
+        if (isRegistrationMode) {
+
+          console.log(
+            "Ignoring registered face in registration mode"
+          );
+
+          return;
+        }
+
+
+        const imageData =
+          event.data.image || "";
+
+
+        if (!imageData) {
+
+          setStatus(
+            "Registered Face image not received.",
+            "error"
+          );
+
+          return;
+        }
+
+
+        await processRegisteredFace(
+          imageData
+        );
+
+        return;
+      }
+
+    }
+  );
+
+
+  /* ==================================================
+     PROCESS REGISTERED FACE
+     ================================================== */
+
+  async function processRegisteredFace(
+    imageData
+  ) {
+
+    try {
+
+      console.log(
+        "Registered Face analyze started"
+      );
+
+
+      registeredFaceLoaded =
+        false;
+
+      registeredDescriptor =
+        null;
+
+      captureBtn.disabled = true;
+
+
+      setStatus(
+        "Registered Face analyze...",
+        "info"
+      );
+
+
+      /*
+       * IMPORTANT:
+       * Use faceapi.fetchImage()
+       * because this was working in
+       * the previous stable version.
+       */
+
+      const img =
+        await faceapi.fetchImage(
+          imageData
+        );
+
+
+      console.log(
+        "Registered image loaded"
+      );
+
+
+      const detection =
+        await faceapi
+          .detectSingleFace(
+            img,
+            new faceapi.TinyFaceDetectorOptions({
+              inputSize: 320,
+              scoreThreshold: 0.5
+            })
+          )
+          .withFaceLandmarks()
+          .withFaceDescriptor();
+
+
+      console.log(
+        "Registered face detection:",
+        detection
+      );
+
+
+      if (!detection) {
+
+        registeredFaceLoaded =
+          false;
+
+        registeredDescriptor =
+          null;
+
+        captureBtn.disabled = true;
+
+        setStatus(
+          "Registered face not detected. Please register the face again.",
+          "error"
+        );
+
+        return;
+      }
+
+
+      /* ----------------------------------------------
+         Save descriptor
+         ---------------------------------------------- */
+
+      registeredDescriptor =
+        detection.descriptor;
+
+      registeredFaceLoaded =
+        true;
+
+
+      /* ----------------------------------------------
+         Enable verification
+         ---------------------------------------------- */
+
+      captureBtn.disabled = false;
+
+
+      setStatus(
+        "Registered face loaded. Ready for verification.",
+        "success"
+      );
+
+
+      distanceBox.textContent =
+        "Registered Face: READY";
+
+
+      console.log(
+        "Registered Face READY"
+      );
+
+
+      sendRegisteredFaceReady();
+
+    } catch (error) {
+
+      console.error(
+        "Registered face processing error:",
+        error
+      );
+
+
+      registeredFaceLoaded =
+        false;
+
+      registeredDescriptor =
+        null;
+
+      captureBtn.disabled =
+        true;
+
+
+      setStatus(
+        "Unable to process registered face.",
+        "error"
+      );
+    }
+  }
+
+
+  /* ==================================================
+     LOAD FACE-API MODELS
+     ================================================== */
+
+  async function loadModels() {
+
+    setStatus(
+      "Loading Face AI models...",
+      "info"
+    );
 
 
     await faceapi.nets.tinyFaceDetector.loadFromUri(
@@ -525,17 +847,9 @@ async function loadFaceModels() {
     );
 
 
-    faceStatus.innerText =
-      "⏳ Face Landmark Model લોડ થઈ રહ્યું છે...";
-
-
     await faceapi.nets.faceLandmark68Net.loadFromUri(
       MODEL_URL
     );
-
-
-    faceStatus.innerText =
-      "⏳ Face Recognition Model લોડ થઈ રહ્યું છે...";
 
 
     await faceapi.nets.faceRecognitionNet.loadFromUri(
@@ -543,704 +857,154 @@ async function loadFaceModels() {
     );
 
 
-    faceModelsLoaded =
+    faceAIReady =
       true;
 
 
-    faceStatus.innerText =
-      "✅ Face AI Ready";
+    console.log(
+      "Face AI models loaded"
+    );
 
+
+    setStatus(
+      "Face AI ready.",
+      "success"
+    );
+
+
+    /*
+     * Camera may already be connected
+     * through window.opener.
+     */
 
     if (
-      cameraMode ===
-      "verification"
+      parentWindow &&
+      parentOrigin
     ) {
 
-      status.innerText =
-        "⏳ Registered Face receive થઈ રહ્યો છે...";
+      sendCameraConnected();
+
+      sendCameraReady();
+    }
+
+
+    /*
+     * Registration:
+     * Capture button can be enabled
+     * immediately.
+     */
+
+    if (isRegistrationMode) {
+
+      captureBtn.disabled =
+        false;
+
+      setStatus(
+        "Camera ready. You can capture the face.",
+        "success"
+      );
 
     } else {
 
-      status.innerText =
-        "✅ Face AI Ready. હવે Camera Open કરો.";
-
-    }
-
-
-    /*
-     * Camera Ready messages
-     */
-
-    sendCameraReady();
-
-    setTimeout(
-      sendCameraReady,
-      500
-    );
-
-    setTimeout(
-      sendCameraReady,
-      1500
-    );
-
-    setTimeout(
-      sendCameraReady,
-      3000
-    );
-
-    setTimeout(
-      sendCameraReady,
-      5000
-    );
-
-
-  } catch(error) {
-
-    console.error(
-      "Face model loading error:",
-      error
-    );
-
-
-    faceModelsLoaded =
-      false;
-
-
-    faceStatus.innerText =
-      "❌ Face AI Model લોડ થઈ શક્યું નથી.";
-
-
-    status.innerText =
-      "Internet connection ચેક કરો અને ફરી પ્રયાસ કરો.";
-
-  }
-
-}
-
-
-/* =========================================================
-   SEND CAMERA READY
-========================================================= */
-
-function sendCameraReady() {
-
-  const sent =
-    sendToParent({
-
-      type:
-        "ITI_VALOD_CAMERA_READY",
-
-      trainee:
-        traineeKey,
-
-      mode:
-        cameraMode
-
-    });
-
-
-  if (sent) {
-
-    connectionStatus.innerText =
-      "✅ Attendance Page સાથે Camera connection તૈયાર છે.";
-
-  }
-
-}
-
-
-/* =========================================================
-   RECEIVE MESSAGE FROM PARENT
-========================================================= */
-
-window.addEventListener(
-  "message",
-  async function(event) {
-
-    console.log(
-      "MESSAGE RECEIVED:",
-      event.origin,
-      event.data
-    );
-
-
-    /*
-     * Security check
-     */
-
-    if (
-      !ALLOWED_PARENT_ORIGINS.includes(
-        event.origin
-      )
-    ) {
-
-      console.log(
-        "Ignored unknown origin:",
-        event.origin
-      );
-
-      return;
-    }
-
-
-    /*
-     * Save actual parent origin
-     */
-
-    parentOrigin =
-      event.origin;
-
-
-    /*
-     * Message opener તરફથી જ આવવો જોઈએ
-     */
-
-    if (
-      window.opener &&
-      event.source !== window.opener
-    ) {
-
-      console.log(
-        "Ignored message: source is not opener"
-      );
-
-      return;
-    }
-
-
-    const data =
-      event.data;
-
-
-    if (!data) {
-      return;
-    }
-
-
-    console.log(
-      "Accepted message:",
-      data.type
-    );
-
-
-    /* =====================================================
-       CAMERA INIT
-    ===================================================== */
-
-    if (
-      data.type ===
-      "ITI_VALOD_CAMERA_INIT"
-    ) {
-
-      connectionStatus.innerText =
-        "✅ Attendance Page તરફથી Camera Init મળ્યું.";
-
-      return;
-
-    }
-
-
-    /* =====================================================
-       REGISTERED FACE
-    ===================================================== */
-
-    if (
-      data.type ===
-      "ITI_VALOD_REGISTERED_FACE"
-    ) {
-
-      if (
-        cameraMode !==
-        "verification"
-      ) {
-
-        console.log(
-          "Registered face ignored in registration mode."
-        );
-
-        return;
-      }
-
-
-      connectionStatus.innerText =
-        "📥 Registered Face Camera સુધી પહોંચી ગયો.";
-
-
-      if (!data.image) {
-
-        registeredFaceReceived =
-          false;
-
-        registeredDescriptor =
-          null;
-
-
-        faceStatus.innerText =
-          "❌ Registered Face image મળ્યો નથી.";
-
-        return;
-
-      }
-
-
       /*
-       * Save image
+       * Verification:
+       * Wait for registered face.
        */
 
-      registeredFaceData =
-        data.image;
+      captureBtn.disabled =
+        !registeredFaceLoaded;
 
-      registeredFaceReceived =
-        false;
+      if (!registeredFaceLoaded) {
 
-      registeredDescriptor =
-        null;
-
-      faceVerified =
-        false;
-
-      faceVerificationDistance =
-        null;
-
-
-      status.innerText =
-        "⏳ Registered Face analyze થઈ રહ્યો છે...";
-
-      faceStatus.innerText =
-        "🔍 Registered Photoમાં Face શોધી રહ્યા છીએ...";
-
-
-      /*
-       * Face AI હજુ ready ન હોય તો
-       */
-
-      if (!faceModelsLoaded) {
-
-        faceStatus.innerText =
-          "⏳ Face AI હજુ તૈયાર થઈ રહ્યું છે...";
-
-        return;
-
-      }
-
-
-      try {
-
-        const descriptor =
-          await getFaceDescriptorFromImage(
-            registeredFaceData
-          );
-
-
-        if (!descriptor) {
-
-          registeredFaceReceived =
-            false;
-
-          registeredDescriptor =
-            null;
-
-
-          faceStatus.innerText =
-            "❌ Registered Photoમાં Face મળ્યો નથી.";
-
-          status.innerText =
-            "Registered Photo ફરી બનાવવી પડશે.";
-
-          return;
-
-        }
-
-
-        /*
-         * SUCCESS
-         */
-
-        registeredDescriptor =
-          descriptor;
-
-        registeredFaceReceived =
-          true;
-
-
-        faceStatus.innerText =
-          "✅ REGISTERED FACE READY";
-
-
-        status.innerText =
-          "હવે Camera Open કરો.";
-
-
-        connectionStatus.innerText =
-          "✅ Registered Face successfully Cameraમાં તૈયાર છે.";
-
-
-        /*
-         * Open Camera button enable
-         */
-
-        startBtn.disabled =
-          false;
-
-
-        /*
-         * Parentને confirmation
-         */
-
-        sendRegisteredFaceReady();
-
-
-        console.log(
-          "REGISTERED FACE DESCRIPTOR READY"
+        setStatus(
+          "Waiting for registered face...",
+          "warning"
         );
-
-
-      } catch(error) {
-
-        console.error(
-          "Registered Face processing error:",
-          error
-        );
-
-
-        registeredFaceReceived =
-          false;
-
-        registeredDescriptor =
-          null;
-
-
-        faceStatus.innerText =
-          "❌ Registered Face process થઈ શક્યો નથી.";
-
-        status.innerText =
-          "Registered Photo ફરી તપાસો.";
-
       }
-
     }
-
   }
-);
 
 
-/* =========================================================
-   REGISTERED FACE READY ACK
-========================================================= */
+  /* ==================================================
+     START CAMERA
+     ================================================== */
 
-function sendRegisteredFaceReady() {
+  async function startCamera() {
 
-  sendToParent({
-
-    type:
-      "ITI_VALOD_REGISTERED_FACE_READY",
-
-    trainee:
-      traineeKey
-
-  });
-
-}
-
-
-/* =========================================================
-   GET FACE DESCRIPTOR
-========================================================= */
-
-async function getFaceDescriptorFromImage(
-  imageData
-) {
-
-  return new Promise(
-    function(resolve) {
-
-      const img =
-        new Image();
-
-
-      img.onload =
-        async function() {
-
-          try {
-
-            const detection =
-              await faceapi
-                .detectSingleFace(
-                  img,
-                  new faceapi.TinyFaceDetectorOptions({
-                    inputSize: 320,
-                    scoreThreshold: 0.5
-                  })
-                )
-                .withFaceLandmarks()
-                .withFaceDescriptor();
-
-
-            if (!detection) {
-
-              resolve(null);
-
-              return;
-
-            }
-
-
-            resolve(
-              detection.descriptor
-            );
-
-
-          } catch(error) {
-
-            console.error(
-              "Descriptor error:",
-              error
-            );
-
-            resolve(null);
-
-          }
-
-        };
-
-
-      img.onerror =
-        function() {
-
-          resolve(null);
-
-        };
-
-
-      img.src =
-        imageData;
-
-    }
-  );
-
-}
-
-
-/* =========================================================
-   START CAMERA
-========================================================= */
-
-async function startCamera() {
-
-  if (!faceModelsLoaded) {
-
-    alert(
-      "Face AI હજુ તૈયાર નથી.\nથોડી વાર રાહ જુઓ."
+    setStatus(
+      "Starting camera...",
+      "info"
     );
 
-    return;
 
-  }
+    if (
+      !navigator.mediaDevices ||
+      !navigator.mediaDevices.getUserMedia
+    ) {
 
-
-  /*
-   * Verification માટે Registered Face ફરજિયાત
-   */
-
-  if (
-    cameraMode ===
-    "verification" &&
-    !registeredDescriptor
-  ) {
-
-    sendCameraReady();
+      throw new Error(
+        "Camera API not supported."
+      );
+    }
 
 
-    alert(
-      "Registered Face હજુ તૈયાર નથી.\n\n" +
-      "થોડી વાર રાહ જુઓ અને ફરી પ્રયાસ કરો."
-    );
-
-    return;
-
-  }
-
-
-  try {
-
-    status.innerText =
-      "📷 Camera permission માંગવામાં આવી રહી છે...";
-
-
-    stream =
+    cameraStream =
       await navigator.mediaDevices.getUserMedia({
 
         video: {
 
-          facingMode:
-            "user",
+          facingMode: "user",
 
           width: {
-            ideal: 1280
+            ideal: 640
           },
 
           height: {
-            ideal: 720
+            ideal: 480
           }
-
         },
 
         audio: false
-
       });
 
 
     video.srcObject =
-      stream;
+      cameraStream;
 
 
     await video.play();
 
 
-    status.innerText =
-      "✅ Camera ચાલુ છે.";
-
-
-    if (
-      cameraMode ===
-      "verification"
-    ) {
-
-      faceStatus.innerText =
-        "👤 Registered Face Match માટે Photo લો.";
-
-      connectionStatus.innerText =
-        "✅ Registered Face Ready. Verification માટે તૈયાર.";
-
-    } else {
-
-      faceStatus.innerText =
-        "👤 Camera સામે એક જ વ્યક્તિનો ચહેરો રાખો.";
-
-      connectionStatus.innerText =
-        "✅ Registration Camera Ready.";
-
-    }
-
-
-    startBtn.style.display =
-      "none";
-
-
-    captureBtn.style.display =
-      "block";
-
-
-    captureBtn.disabled =
-      false;
-
-
-  } catch(error) {
-
-    console.error(
-      "Camera error:",
-      error
+    setStatus(
+      "Camera started.",
+      "success"
     );
 
 
-    status.innerText =
-      "❌ Camera ચાલુ થઈ શક્યો નથી.";
-
-
-    alert(
-      "Camera ચાલુ થઈ શક્યો નથી.\n\n" +
-      "કૃપા કરીને Browserમાં Camera Permission = Allow કરો."
+    console.log(
+      "Camera started successfully"
     );
-
-  }
-
-}
-
-
-/* =========================================================
-   CAPTURE PHOTO
-========================================================= */
-
-async function capturePhoto() {
-
-  if (
-    !video.videoWidth ||
-    !video.videoHeight
-  ) {
-
-    alert(
-      "Camera હજુ તૈયાર નથી.\nથોડી વાર રાહ જુઓ."
-    );
-
-    return;
-
   }
 
 
-  captureBtn.disabled =
-    true;
+  /* ==================================================
+     CREATE CAPTURED IMAGE
+     ================================================== */
 
-
-  status.innerText =
-    "⏳ Face તપાસવામાં આવી રહ્યો છે...";
-
-
-  faceStatus.innerText =
-    "🔍 Face Detection ચાલુ છે...";
-
-
-  try {
-
-    const detections =
-      await faceapi.detectAllFaces(
-        video,
-        new faceapi.TinyFaceDetectorOptions({
-          inputSize: 320,
-          scoreThreshold: 0.5
-        })
-      );
-
+  function createMirroredImage() {
 
     if (
-      !detections ||
-      detections.length === 0
+      !video.videoWidth ||
+      !video.videoHeight
     ) {
 
-      faceStatus.innerText =
-        "❌ Face મળ્યો નથી.";
-
-      status.innerText =
-        "Camera સામે તમારો ચહેરો સ્પષ્ટ રાખો.";
-
-      captureBtn.disabled =
-        false;
-
-      return;
-
+      return "";
     }
 
 
-    if (
-      detections.length > 1
-    ) {
+    const canvas =
+      document.createElement("canvas");
 
-      faceStatus.innerText =
-        "❌ એક કરતાં વધારે Face મળ્યા.";
-
-      status.innerText =
-        "Camera સામે માત્ર એક જ વ્યક્તિ હોવી જોઈએ.";
-
-      captureBtn.disabled =
-        false;
-
-      return;
-
-    }
-
-
-    /*
-     * Capture Image
-     */
 
     canvas.width =
       video.videoWidth;
@@ -1249,11 +1013,22 @@ async function capturePhoto() {
       video.videoHeight;
 
 
-    const context =
+    const ctx =
       canvas.getContext("2d");
 
 
-    context.drawImage(
+    ctx.translate(
+      canvas.width,
+      0
+    );
+
+    ctx.scale(
+      -1,
+      1
+    );
+
+
+    ctx.drawImage(
       video,
       0,
       0,
@@ -1262,512 +1037,883 @@ async function capturePhoto() {
     );
 
 
-    capturedImage =
-      canvas.toDataURL(
-        "image/jpeg",
-        0.85
+    return canvas.toDataURL(
+      "image/jpeg",
+      0.85
+    );
+  }
+
+
+  /* ==================================================
+     REGISTRATION PHOTO CAPTURE
+     ================================================== */
+
+  async function captureRegistrationPhoto() {
+
+    if (!faceAIReady) {
+
+      setStatus(
+        "Face AI is not ready.",
+        "error"
       );
 
+      return;
+    }
 
-    preview.src =
-      capturedImage;
-
-
-    preview.style.display =
-      "block";
-
-
-    video.style.display =
-      "none";
-
-
-    captureBtn.style.display =
-      "none";
-
-
-    retakeBtn.style.display =
-      "block";
-
-
-    /* =====================================================
-       REGISTRATION MODE
-    ===================================================== */
 
     if (
-      cameraMode ===
-      "registration"
+      !video.videoWidth ||
+      !video.videoHeight
     ) {
 
-      faceVerified =
+      setStatus(
+        "Camera is not ready.",
+        "error"
+      );
+
+      return;
+    }
+
+
+    try {
+
+      captureBtn.disabled =
         true;
 
 
-      faceStatus.innerText =
-        "✅ Face Detected";
+      setStatus(
+        "Checking face...",
+        "info"
+      );
 
 
-      status.innerText =
-        "✅ Photo Capture થઈ ગયો.";
+      const detections =
+        await faceapi
+          .detectAllFaces(
+            video,
+            new faceapi.TinyFaceDetectorOptions({
+              inputSize: 320,
+              scoreThreshold: 0.5
+            })
+          )
+          .withFaceLandmarks()
+          .withFaceDescriptors();
 
 
-      useBtn.style.display =
+      if (detections.length === 0) {
+
+        setStatus(
+          "No face detected. Please look at the camera.",
+          "error"
+        );
+
+        captureBtn.disabled =
+          false;
+
+        return;
+      }
+
+
+      if (detections.length > 1) {
+
+        setStatus(
+          "Multiple faces detected. Only one person should be visible.",
+          "error"
+        );
+
+        captureBtn.disabled =
+          false;
+
+        return;
+      }
+
+
+      capturedImageData =
+        createMirroredImage();
+
+
+      if (!capturedImageData) {
+
+        setStatus(
+          "Unable to capture photo.",
+          "error"
+        );
+
+        captureBtn.disabled =
+          false;
+
+        return;
+      }
+
+
+      photoPreview.src =
+        capturedImageData;
+
+      photoPreview.style.display =
         "block";
 
 
-      captureBtn.disabled =
-        false;
-
-
-      return;
-
-    }
-
-
-    /* =====================================================
-       VERIFICATION MODE
-    ===================================================== */
-
-    if (!registeredDescriptor) {
-
-      faceVerified =
-        false;
-
-
-      faceStatus.innerText =
-        "❌ Registered Face હજુ તૈયાર નથી.";
-
-
-      status.innerText =
-        "Registered Face મળ્યા પછી ફરી Capture કરો.";
-
-
-      useBtn.style.display =
+      video.style.display =
         "none";
 
 
-      captureBtn.disabled =
-        false;
-
-
-      return;
-
-    }
-
-
-    /*
-     * Live Face Descriptor
-     */
-
-    status.innerText =
-      "🔐 Registered Face સાથે Match થઈ રહ્યો છે...";
-
-
-    faceStatus.innerText =
-      "⏳ Face Match તપાસી રહ્યા છીએ...";
-
-
-    const liveDescriptor =
-      await getFaceDescriptorFromImage(
-        capturedImage
-      );
-
-
-    if (!liveDescriptor) {
-
-      faceVerified =
-        false;
-
-      faceVerificationDistance =
-        null;
-
-
-      faceStatus.innerText =
-        "❌ Captured Photoમાં Face મળ્યો નથી.";
-
-
-      status.innerText =
-        "ફરીથી Photo Capture કરો.";
-
-
-      useBtn.style.display =
+      captureBtn.style.display =
         "none";
 
 
-      captureBtn.disabled =
-        false;
+      usePhotoBtn.style.display =
+        "block";
 
-
-      return;
-
-    }
-
-
-    /*
-     * Face Distance
-     */
-
-    const distance =
-      faceapi.euclideanDistance(
-        registeredDescriptor,
-        liveDescriptor
-      );
-
-
-    faceVerificationDistance =
-      Number(
-        distance.toFixed(4)
-      );
-
-
-    console.log(
-      "FACE DISTANCE:",
-      faceVerificationDistance
-    );
-
-
-    /*
-     * MATCH
-     */
-
-    if (
-      distance <=
-      FACE_MATCH_THRESHOLD
-    ) {
-
-      faceVerified =
-        true;
-
-
-      faceStatus.innerText =
-        "✅ FACE MATCH SUCCESS";
-
-
-      status.innerText =
-        "✅ Face Verification સફળ થયું.";
-
-
-      useBtn.style.display =
+      retakeBtn.style.display =
         "block";
 
 
-      sendFaceVerificationResult(
-        true,
-        faceVerificationDistance
+      setStatus(
+        "Photo captured. Click Use Photo.",
+        "success"
       );
 
 
-    } else {
+    } catch (error) {
 
-      faceVerified =
+      console.error(
+        "Registration capture error:",
+        error
+      );
+
+
+      setStatus(
+        "Unable to capture face.",
+        "error"
+      );
+
+
+      captureBtn.disabled =
         false;
+    }
+  }
 
 
-      faceStatus.innerText =
-        "❌ FACE MATCH FAILED";
+  /* ==================================================
+     USE REGISTRATION PHOTO
+     ================================================== */
 
+  function usePhoto() {
 
-      status.innerText =
-        "આ Registered Traineeનો Face નથી.";
+    if (!capturedImageData) {
 
-
-      useBtn.style.display =
-        "none";
-
-
-      sendFaceVerificationResult(
-        false,
-        faceVerificationDistance
+      setStatus(
+        "No photo available.",
+        "error"
       );
 
+      return;
     }
 
 
-    captureBtn.disabled =
-      false;
-
-
-  } catch(error) {
-
-    console.error(
-      "Capture / verification error:",
-      error
-    );
-
-
-    faceVerified =
-      false;
-
-
-    captureBtn.disabled =
-      false;
-
-
-    faceStatus.innerText =
-      "❌ Face Verificationમાં error.";
-
-
-    status.innerText =
-      "ફરીથી Photo Capture કરો.";
-
-  }
-
-}
-
-
-/* =========================================================
-   SEND VERIFICATION RESULT
-========================================================= */
-
-function sendFaceVerificationResult(
-  verified,
-  distance
-) {
-
-  sendToParent({
-
-    type:
-      "ITI_VALOD_FACE_VERIFIED",
-
-    verified:
-      verified,
-
-    faceVerified:
-      verified,
-
-    distance:
-      distance,
-
-    trainee:
-      traineeKey
-
-  });
-
-}
-
-
-/* =========================================================
-   RETAKE
-========================================================= */
-
-function retakePhoto() {
-
-  capturedImage =
-    null;
-
-  faceVerified =
-    false;
-
-  faceVerificationDistance =
-    null;
-
-
-  preview.src =
-    "";
-
-  preview.style.display =
-    "none";
-
-
-  video.style.display =
-    "block";
-
-
-  retakeBtn.style.display =
-    "none";
-
-
-  useBtn.style.display =
-    "none";
-
-
-  captureBtn.style.display =
-    "block";
-
-
-  captureBtn.disabled =
-    false;
-
-
-  if (
-    cameraMode ===
-    "verification"
-  ) {
-
-    faceStatus.innerText =
-      "👤 Registered Face Match માટે ફરી Photo લો.";
-
-    status.innerText =
-      "ફરીથી Photo Capture કરો.";
-
-  } else {
-
-    faceStatus.innerText =
-      "👤 Face Detection Ready";
-
-    status.innerText =
-      "ફરીથી Photo Capture કરો.";
-
-  }
-
-}
-
-
-/* =========================================================
-   USE PHOTO
-========================================================= */
-
-function usePhoto() {
-
-  if (!capturedImage) {
-
-    alert(
-      "પહેલા Photo Capture કરો."
-    );
-
-    return;
-
-  }
-
-
-  /*
-   * Verification modeમાં SUCCESS ફરજિયાત
-   */
-
-  if (
-    cameraMode ===
-    "verification" &&
-    faceVerified !== true
-  ) {
-
-    alert(
-      "❌ Face Verification સફળ નથી.\n\n" +
-      "Registered Face સાથે Match થયા પછી જ Photo Use કરી શકાશે."
-    );
-
-    return;
-
-  }
-
-
-  const sent =
     sendToParent({
 
       type:
         "ITI_VALOD_FACE_CAPTURE",
 
+      trainee:
+        selectedTrainee,
+
+      traineeId:
+        selectedTraineeId,
+
       image:
-        capturedImage,
+        capturedImageData,
 
       faceVerified:
-        faceVerified,
+        false,
 
       verified:
-        faceVerified,
+        false,
 
-      distance:
-        faceVerificationDistance,
-
-      trainee:
-        traineeKey
-
+      mode:
+        "registration"
     });
 
 
-  if (sent) {
-
-    status.innerText =
-      "✅ Photo Parent Page પર મોકલાઈ રહ્યો છે.";
-
-
-    /*
-     * Camera બંધ
-     */
-
-    stopCamera();
+    setStatus(
+      "Photo sent for registration.",
+      "success"
+    );
 
 
     /*
-     * Parentને message પહોંચવા થોડો સમય
+     * Give parent a moment to receive
+     * the image before closing.
      */
 
     setTimeout(
       function() {
 
-        try {
-
-          window.close();
-
-        } catch(error) {
-
-          console.log(
-            "Window close error:",
-            error
-          );
-
-        }
+        closeCamera();
 
       },
-      1200
+      700
     );
-
-  } else {
-
-    alert(
-      "❌ Parent Attendance Page સાથે connection નથી."
-    );
-
-  }
-
-}
-
-
-/* =========================================================
-   STOP CAMERA
-========================================================= */
-
-function stopCamera() {
-
-  if (!stream) {
-    return;
   }
 
 
-  stream
-    .getTracks()
-    .forEach(
-      function(track) {
+  /* ==================================================
+     RETAKE PHOTO
+     ================================================== */
 
-        track.stop();
+  function retakePhoto() {
 
+    capturedImageData =
+      "";
+
+
+    photoPreview.src =
+      "";
+
+    photoPreview.style.display =
+      "none";
+
+
+    video.style.display =
+      "block";
+
+
+    captureBtn.style.display =
+      "block";
+
+    captureBtn.disabled =
+      false;
+
+
+    usePhotoBtn.style.display =
+      "none";
+
+    retakeBtn.style.display =
+      "none";
+
+
+    setStatus(
+      "Camera ready. Capture again.",
+      "info"
+    );
+  }
+
+
+  /* ==================================================
+     VERIFY FACE
+     ================================================== */
+
+  async function verifyFace() {
+
+    if (verificationInProgress) {
+      return;
+    }
+
+
+    if (!faceAIReady) {
+
+      setStatus(
+        "Face AI is not ready.",
+        "error"
+      );
+
+      return;
+    }
+
+
+    if (!registeredFaceLoaded) {
+
+      setStatus(
+        "Registered face is not ready yet.",
+        "error"
+      );
+
+      return;
+    }
+
+
+    if (!registeredDescriptor) {
+
+      setStatus(
+        "Registered face descriptor is missing.",
+        "error"
+      );
+
+      return;
+    }
+
+
+    if (
+      !video.videoWidth ||
+      !video.videoHeight
+    ) {
+
+      setStatus(
+        "Camera is not ready.",
+        "error"
+      );
+
+      return;
+    }
+
+
+    try {
+
+      verificationInProgress =
+        true;
+
+      captureBtn.disabled =
+        true;
+
+
+      distanceBox.textContent =
+        "";
+
+
+      setStatus(
+        "Checking your face...",
+        "info"
+      );
+
+
+      console.log(
+        "Face verification started"
+      );
+
+
+      const detections =
+        await faceapi
+          .detectAllFaces(
+            video,
+            new faceapi.TinyFaceDetectorOptions({
+              inputSize: 320,
+              scoreThreshold: 0.5
+            })
+          )
+          .withFaceLandmarks()
+          .withFaceDescriptors();
+
+
+      console.log(
+        "Live face detections:",
+        detections.length
+      );
+
+
+      /* ----------------------------------------------
+         No face
+         ---------------------------------------------- */
+
+      if (detections.length === 0) {
+
+        setStatus(
+          "Face not found. Please look directly at the camera.",
+          "error"
+        );
+
+
+        sendToParent({
+
+          type:
+            "ITI_VALOD_FACE_VERIFIED",
+
+          trainee:
+            selectedTrainee,
+
+          traineeId:
+            selectedTraineeId,
+
+          verified:
+            false,
+
+          faceVerified:
+            false,
+
+          distance:
+            null,
+
+          mode:
+            "verification"
+        });
+
+
+        captureBtn.disabled =
+          false;
+
+        verificationInProgress =
+          false;
+
+        return;
       }
-    );
 
 
-  stream =
-    null;
+      /* ----------------------------------------------
+         Multiple faces
+         ---------------------------------------------- */
+
+      if (detections.length > 1) {
+
+        setStatus(
+          "Multiple faces detected. Only one person should be visible.",
+          "error"
+        );
 
 
-  video.srcObject =
-    null;
+        sendToParent({
 
-}
+          type:
+            "ITI_VALOD_FACE_VERIFIED",
+
+          trainee:
+            selectedTrainee,
+
+          traineeId:
+            selectedTraineeId,
+
+          verified:
+            false,
+
+          faceVerified:
+            false,
+
+          distance:
+            null,
+
+          mode:
+            "verification"
+        });
 
 
-/* =========================================================
-   BEFORE UNLOAD
-========================================================= */
+        captureBtn.disabled =
+          false;
 
-window.addEventListener(
-  "beforeunload",
-  function() {
+        verificationInProgress =
+          false;
 
-    stopCamera();
+        return;
+      }
 
+
+      /* ----------------------------------------------
+         Calculate distance
+         ---------------------------------------------- */
+
+      const liveFace =
+        detections[0];
+
+
+      const distance =
+        faceapi.euclideanDistance(
+          registeredDescriptor,
+          liveFace.descriptor
+        );
+
+
+      console.log(
+        "Face distance:",
+        distance
+      );
+
+
+      distanceBox.textContent =
+        "Face Distance: " +
+        distance.toFixed(3);
+
+
+      /* ----------------------------------------------
+         Face does NOT match
+         ---------------------------------------------- */
+
+      if (
+        distance >
+        FACE_DISTANCE_THRESHOLD
+      ) {
+
+        setStatus(
+          "Face does not match the registered face.",
+          "error"
+        );
+
+
+        sendToParent({
+
+          type:
+            "ITI_VALOD_FACE_VERIFIED",
+
+          trainee:
+            selectedTrainee,
+
+          traineeId:
+            selectedTraineeId,
+
+          verified:
+            false,
+
+          faceVerified:
+            false,
+
+          distance:
+            distance,
+
+          mode:
+            "verification"
+        });
+
+
+        captureBtn.disabled =
+          false;
+
+        verificationInProgress =
+          false;
+
+        return;
+      }
+
+
+      /* ----------------------------------------------
+         MATCH SUCCESS
+         ---------------------------------------------- */
+
+      setStatus(
+        "Face matched successfully.",
+        "success"
+      );
+
+
+      capturedImageData =
+        createMirroredImage();
+
+
+      /* ----------------------------------------------
+         Send captured image
+         ---------------------------------------------- */
+
+      sendToParent({
+
+        type:
+          "ITI_VALOD_FACE_CAPTURE",
+
+        trainee:
+          selectedTrainee,
+
+        traineeId:
+          selectedTraineeId,
+
+        image:
+          capturedImageData,
+
+        faceVerified:
+          true,
+
+        verified:
+          true,
+
+        distance:
+          distance,
+
+        mode:
+          "verification"
+      });
+
+
+      /* ----------------------------------------------
+         Send verification result
+         ---------------------------------------------- */
+
+      sendToParent({
+
+        type:
+          "ITI_VALOD_FACE_VERIFIED",
+
+        trainee:
+          selectedTrainee,
+
+        traineeId:
+          selectedTraineeId,
+
+        verified:
+          true,
+
+        faceVerified:
+          true,
+
+        distance:
+          distance,
+
+        mode:
+          "verification"
+      });
+
+
+      console.log(
+        "FACE VERIFIED SUCCESSFULLY"
+      );
+
+
+      /*
+       * Do not close immediately.
+       * Parent page gets time to process
+       * the verification result.
+       */
+
+      setTimeout(
+        function() {
+
+          closeCamera();
+
+        },
+        1000
+      );
+
+
+    } catch (error) {
+
+      console.error(
+        "Face verification error:",
+        error
+      );
+
+
+      setStatus(
+        "Face verification process error.",
+        "error"
+      );
+
+
+      sendToParent({
+
+        type:
+          "ITI_VALOD_FACE_VERIFIED",
+
+        trainee:
+          selectedTrainee,
+
+        traineeId:
+          selectedTraineeId,
+
+        verified:
+          false,
+
+        faceVerified:
+          false,
+
+        distance:
+          null,
+
+        mode:
+          "verification"
+      });
+
+
+      captureBtn.disabled =
+        false;
+
+    } finally {
+
+      verificationInProgress =
+        false;
+    }
   }
-);
+
+
+  /* ==================================================
+     CLOSE CAMERA
+     ================================================== */
+
+  function closeCamera() {
+
+    try {
+
+      if (cameraStream) {
+
+        cameraStream
+          .getTracks()
+          .forEach(function(track) {
+
+            track.stop();
+
+          });
+
+        cameraStream =
+          null;
+      }
+
+    } catch (error) {
+
+      console.warn(
+        "Camera stop error:",
+        error
+      );
+    }
+
+
+    try {
+
+      window.close();
+
+    } catch (error) {
+
+      console.warn(
+        "Window close error:",
+        error
+      );
+    }
+  }
+
+
+  /* ==================================================
+     BUTTON EVENTS
+     ================================================== */
+
+  captureBtn.addEventListener(
+    "click",
+    function() {
+
+      if (isRegistrationMode) {
+
+        captureRegistrationPhoto();
+
+      } else {
+
+        verifyFace();
+      }
+
+    }
+  );
+
+
+  usePhotoBtn.addEventListener(
+    "click",
+    function() {
+
+      usePhoto();
+
+    }
+  );
+
+
+  retakeBtn.addEventListener(
+    "click",
+    function() {
+
+      retakePhoto();
+
+    }
+  );
+
+
+  closeBtn.addEventListener(
+    "click",
+    function() {
+
+      closeCamera();
+
+    }
+  );
+
+
+  /* ==================================================
+     INITIAL PARENT DETECTION
+     ================================================== */
+
+  detectParentWindow();
+
+
+  /*
+   * Try to identify parent origin from referrer.
+   */
+
+  try {
+
+    if (
+      document.referrer
+    ) {
+
+      const referrerUrl =
+        new URL(
+          document.referrer
+        );
+
+      if (
+        isValidParentOrigin(
+          referrerUrl.origin
+        )
+      ) {
+
+        parentOrigin =
+          referrerUrl.origin;
+
+        console.log(
+          "Parent origin detected:",
+          parentOrigin
+        );
+      }
+    }
+
+  } catch (error) {
+
+    console.warn(
+      "Referrer detection failed:",
+      error
+    );
+  }
+
+
+  /* ==================================================
+     INITIALIZATION
+     ================================================== */
+
+  (async function init() {
+
+    try {
+
+      setStatus(
+        "Connecting to ITI VALOD Attendance...",
+        "info"
+      );
+
+
+      await startCamera();
+
+
+      await loadModels();
+
+
+      /*
+       * If parent was already detected
+       * through window.opener/referrer,
+       * send connection information.
+       */
+
+      if (
+        parentWindow &&
+        parentOrigin
+      ) {
+
+        sendCameraConnected();
+
+        sendCameraReady();
+      }
+
+
+    } catch (error) {
+
+      console.error(
+        "Camera initialization error:",
+        error
+      );
+
+
+      setStatus(
+        "Camera initialization failed. Please allow camera permission and reload.",
+        "error"
+      );
+    }
+
+  })();
 
 </script>
 
 </body>
-
 </html>
