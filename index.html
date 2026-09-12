@@ -206,27 +206,29 @@
 
 <script>
 
+
 /* =========================================================
    ITI VALOD SMART ATTENDANCE
    COMPLETE FACE CAMERA
+   REGISTRATION + VERIFICATION
 
-   MODE 1:
-   REGISTRATION
-   → Capture Photo
-   → Use Photo
-   → Send to Face Registration page
+   IMPORTANT:
+   Registration:
+   Capture Photo
+       ↓
+   Use Photo
+       ↓
+   Face Registration Page
 
-   MODE 2:
-   VERIFICATION
-   → Registered Face
-   → Verify Face
-   → Send verification result
-   ========================================================= */
+   This version uses BOTH:
+   1. parentWindow from postMessage
+   2. window.opener fallback
+========================================================= */
 
 
-/* ---------------------------------------------------------
+/* =========================================================
    BASIC CONFIGURATION
---------------------------------------------------------- */
+========================================================= */
 
 const CAMERA_ORIGIN =
   "https://prashantpatel12th-prog.github.io";
@@ -241,9 +243,9 @@ const ALLOWED_FIXED_PARENT_ORIGINS = [
 ];
 
 
-/* ---------------------------------------------------------
+/* =========================================================
    DOM
---------------------------------------------------------- */
+========================================================= */
 
 const video =
   document.getElementById("video");
@@ -285,9 +287,13 @@ const modeText =
   document.getElementById("modeText");
 
 
-/* ---------------------------------------------------------
+const videoContainer =
+  document.getElementById("videoContainer");
+
+
+/* =========================================================
    STATE
---------------------------------------------------------- */
+========================================================= */
 
 let parentWindow = null;
 
@@ -312,16 +318,16 @@ let verificationInProgress = false;
 let capturedImageData = "";
 
 
-/* ---------------------------------------------------------
+/* =========================================================
    FACE MATCHING THRESHOLD
---------------------------------------------------------- */
+========================================================= */
 
 const FACE_DISTANCE_THRESHOLD = 0.55;
 
 
-/* ---------------------------------------------------------
+/* =========================================================
    READ URL PARAMETERS
---------------------------------------------------------- */
+========================================================= */
 
 const urlParams =
   new URLSearchParams(
@@ -344,17 +350,17 @@ const mode =
   ).toLowerCase();
 
 
-/* ---------------------------------------------------------
+/* =========================================================
    DETERMINE MODE
---------------------------------------------------------- */
+========================================================= */
 
 const isRegistrationMode =
   mode === "registration";
 
 
-/* ---------------------------------------------------------
+/* =========================================================
    INITIAL UI
---------------------------------------------------------- */
+========================================================= */
 
 if (isRegistrationMode) {
 
@@ -376,9 +382,9 @@ else {
 }
 
 
-/* ---------------------------------------------------------
+/* =========================================================
    STATUS
---------------------------------------------------------- */
+========================================================= */
 
 function setStatus(
   message,
@@ -417,9 +423,9 @@ function setStatus(
 }
 
 
-/* ---------------------------------------------------------
+/* =========================================================
    PARENT ORIGIN VALIDATION
---------------------------------------------------------- */
+========================================================= */
 
 function isAllowedParentOrigin(
   origin
@@ -503,21 +509,124 @@ function isAllowedParentOrigin(
 }
 
 
-/* ---------------------------------------------------------
+/* =========================================================
+   GET PARENT WINDOW
+========================================================= */
+
+function getBestParentWindow() {
+
+  /*
+   * First preference:
+   * parentWindow received through postMessage
+   */
+
+  if (parentWindow) {
+
+    return parentWindow;
+
+  }
+
+
+  /*
+   * Second preference:
+   * window.opener
+   */
+
+  try {
+
+    if (
+      window.opener &&
+      !window.opener.closed
+    ) {
+
+      return window.opener;
+
+    }
+
+  }
+  catch (error) {
+
+    console.log(
+      "window.opener unavailable"
+    );
+
+  }
+
+
+  return null;
+
+}
+
+
+/* =========================================================
+   GET PARENT ORIGIN
+========================================================= */
+
+function getBestParentOrigin() {
+
+  /*
+   * If parent origin already known,
+   * use it.
+   */
+
+  if (
+    parentOrigin &&
+    isAllowedParentOrigin(
+      parentOrigin
+    )
+  ) {
+
+    return parentOrigin;
+
+  }
+
+
+  /*
+   * Apps Script parent is normally
+   * script.google.com or googleusercontent.
+   *
+   * Because targetOrigin cannot be wildcard
+   * for secure communication, try the known
+   * Apps Script origins.
+   */
+
+  return null;
+
+}
+
+
+/* =========================================================
    SEND MESSAGE TO PARENT
---------------------------------------------------------- */
+========================================================= */
 
 function sendToParent(
   message
 ) {
 
+  const targetWindow =
+    getBestParentWindow();
+
+
+  /*
+   * If INIT handshake has already provided
+   * exact parent origin, use it.
+   */
+
+  let targetOrigin =
+    getBestParentOrigin();
+
+
+  /*
+   * If parent origin is not known,
+   * try Apps Script known origins.
+   */
+
   if (
-    !parentWindow ||
-    !parentOrigin
+    !targetWindow
   ) {
 
-    console.warn(
-      "Parent window not connected."
+    console.error(
+      "Parent window not available."
     );
 
     return false;
@@ -526,14 +635,85 @@ function sendToParent(
 
 
   if (
+    !targetOrigin
+  ) {
+
+    /*
+     * Try Google Apps Script origins.
+     *
+     * First send to script.google.com.
+     */
+
+    try {
+
+      targetWindow.postMessage(
+        message,
+        "https://script.google.com"
+      );
+
+      console.log(
+        "Message sent using script.google.com:",
+        message.type
+      );
+
+    }
+    catch (error) {
+
+      console.error(
+        "postMessage failed:",
+        error
+      );
+
+      return false;
+
+    }
+
+
+    /*
+     * Also try script.googleusercontent.com.
+     */
+
+    try {
+
+      targetWindow.postMessage(
+        message,
+        "https://script.googleusercontent.com"
+      );
+
+      console.log(
+        "Message sent using script.googleusercontent.com:",
+        message.type
+      );
+
+    }
+    catch (error) {
+
+      console.log(
+        "Second parent origin failed:",
+        error
+      );
+
+    }
+
+
+    return true;
+
+  }
+
+
+  /*
+   * Exact known parent origin.
+   */
+
+  if (
     !isAllowedParentOrigin(
-      parentOrigin
+      targetOrigin
     )
   ) {
 
     console.error(
       "Blocked parent origin:",
-      parentOrigin
+      targetOrigin
     );
 
     return false;
@@ -543,15 +723,17 @@ function sendToParent(
 
   try {
 
-    parentWindow.postMessage(
+    targetWindow.postMessage(
       message,
-      parentOrigin
+      targetOrigin
     );
 
 
     console.log(
       "Message sent to parent:",
-      message.type
+      message.type,
+      "Origin:",
+      targetOrigin
     );
 
 
@@ -573,9 +755,9 @@ function sendToParent(
 }
 
 
-/* ---------------------------------------------------------
+/* =========================================================
    CAMERA CONNECTED
---------------------------------------------------------- */
+========================================================= */
 
 function sendCameraConnected() {
 
@@ -601,21 +783,11 @@ function sendCameraConnected() {
 }
 
 
-/* ---------------------------------------------------------
+/* =========================================================
    CAMERA READY
---------------------------------------------------------- */
+========================================================= */
 
 function sendCameraReady() {
-
-  if (
-    !parentWindow ||
-    !parentOrigin
-  ) {
-
-    return;
-
-  }
-
 
   if (!faceAIReady) {
 
@@ -644,21 +816,18 @@ function sendCameraReady() {
   });
 
 
-  cameraReadySent = true;
+  cameraReadySent =
+    true;
 
-
-  /*
-   * IMPORTANT:
-   * Registration mode does NOT require
-   * a registered face.
-   */
 
   if (isRegistrationMode) {
 
-    captureBtn.disabled = false;
+    captureBtn.disabled =
+      false;
+
 
     setStatus(
-      "Camera ready. Trainee નો face cameraમાં રાખો.",
+      "Camera ready. Face cameraમાં રાખો અને Capture Photo દબાવો.",
       "success"
     );
 
@@ -667,9 +836,9 @@ function sendCameraReady() {
 }
 
 
-/* ---------------------------------------------------------
+/* =========================================================
    REGISTERED FACE READY
---------------------------------------------------------- */
+========================================================= */
 
 function sendRegisteredFaceReady() {
 
@@ -696,9 +865,9 @@ window.addEventListener(
 
     try {
 
-      /* ---------------------------------------------------
-         SECURITY
-      --------------------------------------------------- */
+      /*
+       * SECURITY
+       */
 
       if (
         !isAllowedParentOrigin(
@@ -707,14 +876,8 @@ window.addEventListener(
       ) {
 
         console.warn(
-          "MESSAGE ORIGIN REJECTED",
+          "MESSAGE ORIGIN REJECTED:",
           event.origin
-        );
-
-        setStatus(
-          "Message Origin Rejected: " +
-          event.origin,
-          "error"
         );
 
         return;
@@ -722,12 +885,16 @@ window.addEventListener(
       }
 
 
-      /* ---------------------------------------------------
-         SAVE PARENT
-      --------------------------------------------------- */
+      /*
+       * Save parent connection.
+       */
 
-      parentWindow =
-        event.source;
+      if (event.source) {
+
+        parentWindow =
+          event.source;
+
+      }
 
 
       parentOrigin =
@@ -744,9 +911,9 @@ window.addEventListener(
         event.data || {};
 
 
-      /* ---------------------------------------------------
+      /* =====================================================
          CAMERA INIT
-      --------------------------------------------------- */
+      ===================================================== */
 
       if (
         data.type ===
@@ -796,24 +963,19 @@ window.addEventListener(
       }
 
 
-      /* ---------------------------------------------------
+      /* =====================================================
          REGISTERED FACE
-         --------------------------------------------------- */
+      ===================================================== */
 
       if (
         data.type ===
         "ITI_VALOD_REGISTERED_FACE"
       ) {
 
-        /*
-         * Registered face is ONLY needed
-         * in verification mode.
-         */
-
         if (isRegistrationMode) {
 
           console.log(
-            "Ignoring registered face in registration mode."
+            "Registration mode: registered face ignored."
           );
 
           return;
@@ -1024,15 +1186,19 @@ async function loadModels() {
       true;
 
 
-    setStatus(
-      "Face recognition ready.",
-      "success"
+    console.log(
+      "Face API models loaded."
     );
 
 
+    /*
+     * Send connection messages if parent
+     * is already connected.
+     */
+
     if (
-      parentWindow &&
-      parentOrigin
+      parentWindow ||
+      window.opener
     ) {
 
       sendCameraConnected();
@@ -1042,15 +1208,11 @@ async function loadModels() {
     }
 
 
-    /*
-     * REGISTRATION MODE:
-     * Capture button can immediately be enabled.
-     */
-
     if (isRegistrationMode) {
 
       captureBtn.disabled =
         false;
+
 
       setStatus(
         "Camera ready. Face cameraમાં રાખો અને Capture Photo દબાવો.",
@@ -1059,11 +1221,6 @@ async function loadModels() {
 
     }
     else {
-
-      /*
-       * VERIFICATION MODE:
-       * Wait for registered face.
-       */
 
       if (
         registeredFaceLoaded
@@ -1176,8 +1333,7 @@ async function startCamera() {
 
 
 /* =========================================================
-   CAPTURE PHOTO
-   REGISTRATION MODE
+   REGISTRATION PHOTO CAPTURE
 ========================================================= */
 
 async function captureRegistrationPhoto() {
@@ -1240,9 +1396,9 @@ async function captureRegistrationPhoto() {
         );
 
 
-    /* ---------------------------------------------------
-       NO FACE
-    --------------------------------------------------- */
+    /*
+     * NO FACE
+     */
 
     if (
       !detection ||
@@ -1264,9 +1420,9 @@ async function captureRegistrationPhoto() {
     }
 
 
-    /* ---------------------------------------------------
-       MULTIPLE FACES
-    --------------------------------------------------- */
+    /*
+     * MULTIPLE FACES
+     */
 
     if (
       detection.length > 1
@@ -1287,9 +1443,9 @@ async function captureRegistrationPhoto() {
     }
 
 
-    /* ---------------------------------------------------
-       CREATE PHOTO
-    --------------------------------------------------- */
+    /*
+     * CREATE PHOTO
+     */
 
     const canvas =
       document.createElement(
@@ -1312,8 +1468,7 @@ async function captureRegistrationPhoto() {
 
 
     /*
-     * Mirror image so photo
-     * looks natural.
+     * Mirror image
      */
 
     ctx.translate(
@@ -1348,9 +1503,9 @@ async function captureRegistrationPhoto() {
       );
 
 
-    /* ---------------------------------------------------
-       SHOW PREVIEW
-    --------------------------------------------------- */
+    /*
+     * Show preview
+     */
 
     photoPreview.src =
       capturedImageData;
@@ -1360,13 +1515,7 @@ async function captureRegistrationPhoto() {
       "block";
 
 
-    /*
-     * Hide live video after capture.
-     */
-
-    document.getElementById(
-      "videoContainer"
-    ).style.display =
+    videoContainer.style.display =
       "none";
 
 
@@ -1412,6 +1561,7 @@ async function captureRegistrationPhoto() {
 
 /* =========================================================
    USE PHOTO
+   IMPORTANT FIX
 ========================================================= */
 
 function usePhoto() {
@@ -1428,43 +1578,83 @@ function usePhoto() {
   }
 
 
+  /*
+   * Make absolutely sure opener is available.
+   */
+
+  try {
+
+    if (
+      !parentWindow &&
+      window.opener &&
+      !window.opener.closed
+    ) {
+
+      parentWindow =
+        window.opener;
+
+      console.log(
+        "Using window.opener as parent."
+      );
+
+    }
+
+  }
+  catch (error) {
+
+    console.log(
+      "Unable to access window.opener."
+    );
+
+  }
+
+
   setStatus(
-    "Photo selected. Face Registration page પર મોકલી રહ્યા છીએ...",
-    "success"
+    "Photo Face Registration page પર મોકલી રહ્યા છીએ...",
+    "info"
   );
 
 
+  const message = {
+
+    type:
+      "ITI_VALOD_FACE_CAPTURE",
+
+    trainee:
+      selectedTrainee,
+
+    traineeId:
+      selectedTraineeId,
+
+    image:
+      capturedImageData,
+
+    mode:
+      "registration",
+
+    faceVerified:
+      false,
+
+    verified:
+      false
+
+  };
+
+
+  /*
+   * Send to parent.
+   */
+
   const sent =
-    sendToParent({
-
-      type:
-        "ITI_VALOD_FACE_CAPTURE",
-
-      trainee:
-        selectedTrainee,
-
-      traineeId:
-        selectedTraineeId,
-
-      image:
-        capturedImageData,
-
-      mode:
-        "registration",
-
-      faceVerified:
-        false,
-
-      verified:
-        false
-
-    });
+    sendToParent(
+      message
+    );
 
 
   if (!sent) {
 
     setStatus(
-      "Parent page સાથે connection નથી. Camera ફરીથી ખોલો.",
+      "❌ Face Registration page સાથે connection નથી. Camera ફરીથી ખોલો.",
       "error"
     );
 
@@ -1474,18 +1664,27 @@ function usePhoto() {
 
 
   /*
-   * થોડા સમય પછી camera બંધ.
+   * Give message enough time to reach
+   * Face Registration page before closing.
    */
+
+  setStatus(
+    "✅ Photo Face Registration page પર મોકલાઈ રહી છે...",
+    "success"
+  );
+
 
   setTimeout(
     function() {
 
       stopCamera();
 
+
       try {
 
         if (
-          window.opener
+          window.opener &&
+          !window.opener.closed
         ) {
 
           window.close();
@@ -1502,7 +1701,7 @@ function usePhoto() {
       }
 
     },
-    700
+    1200
   );
 
 }
@@ -1526,9 +1725,7 @@ function retakePhoto() {
     "none";
 
 
-  document.getElementById(
-    "videoContainer"
-  ).style.display =
+  videoContainer.style.display =
     "block";
 
 
@@ -1652,7 +1849,9 @@ async function verifyFace() {
         .withFaceDescriptors();
 
 
-    /* NO FACE */
+    /*
+     * NO FACE
+     */
 
     if (
       !detection ||
@@ -1669,7 +1868,9 @@ async function verifyFace() {
     }
 
 
-    /* MULTIPLE FACES */
+    /*
+     * MULTIPLE FACES
+     */
 
     if (
       detection.length > 1
@@ -1689,7 +1890,9 @@ async function verifyFace() {
       detection[0];
 
 
-    /* DISTANCE */
+    /*
+     * FACE DISTANCE
+     */
 
     const distance =
       faceapi.euclideanDistance(
@@ -1717,7 +1920,9 @@ async function verifyFace() {
       FACE_DISTANCE_THRESHOLD;
 
 
-    /* CREATE IMAGE */
+    /*
+     * CREATE VERIFICATION IMAGE
+     */
 
     const canvas =
       document.createElement(
@@ -1771,7 +1976,9 @@ async function verifyFace() {
       );
 
 
-    /* NOT MATCHED */
+    /*
+     * NOT MATCHED
+     */
 
     if (!verified) {
 
@@ -1788,6 +1995,9 @@ async function verifyFace() {
 
         trainee:
           selectedTrainee,
+
+        traineeId:
+          selectedTraineeId,
 
         verified:
           false,
@@ -1806,7 +2016,9 @@ async function verifyFace() {
     }
 
 
-    /* VERIFIED */
+    /*
+     * VERIFIED
+     */
 
     setStatus(
       "Face verified successfully.",
@@ -1821,6 +2033,9 @@ async function verifyFace() {
 
       trainee:
         selectedTrainee,
+
+      traineeId:
+        selectedTraineeId,
 
       image:
         imageData,
@@ -1847,6 +2062,9 @@ async function verifyFace() {
 
       trainee:
         selectedTrainee,
+
+      traineeId:
+        selectedTraineeId,
 
       faceVerified:
         true,
@@ -1955,7 +2173,8 @@ closeBtn.addEventListener(
     try {
 
       if (
-        window.opener
+        window.opener &&
+        !window.opener.closed
       ) {
 
         window.close();
@@ -2053,10 +2272,42 @@ video.addEventListener(
     );
 
 
+    /*
+     * If opened by Face Registration page,
+     * immediately remember opener.
+     */
+
+    try {
+
+      if (
+        window.opener &&
+        !window.opener.closed
+      ) {
+
+        parentWindow =
+          window.opener;
+
+        console.log(
+          "Opener detected."
+        );
+
+      }
+
+    }
+    catch (error) {
+
+      console.log(
+        "Opener detection failed."
+      );
+
+    }
+
+
     await startCamera();
 
 
     await loadModels();
+
 
   }
   catch (error) {
@@ -2075,6 +2326,7 @@ video.addEventListener(
   }
 
 })();
+
 
 </script>
 
