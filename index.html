@@ -4,7 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>STMS Camera</title>
+  <title>STMS Camera - Face Verification</title>
+
+  <!-- Face API -->
+  <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 
   <style>
     body {
@@ -81,6 +84,15 @@
     #status {
       margin-top: 15px;
       font-weight: bold;
+      line-height: 1.5;
+    }
+
+    #faceStatus {
+      margin-top: 10px;
+      font-weight: bold;
+      padding: 10px;
+      border-radius: 8px;
+      background: #eeeeee;
     }
   </style>
 </head>
@@ -92,7 +104,13 @@
   <h1>ITI VALOD</h1>
   <h2>STMS Camera</h2>
 
-  <p id="status">Camera શરૂ કરવા માટે નીચેનું button દબાવો.</p>
+  <p id="status">
+    Camera શરૂ કરવા માટે નીચેનું button દબાવો.
+  </p>
+
+  <div id="faceStatus">
+    Face Detection: શરૂ થયું નથી
+  </div>
 
   <video id="video" autoplay playsinline muted></video>
 
@@ -123,6 +141,63 @@
 let stream = null;
 let capturedImage = null;
 
+let modelsLoaded = false;
+let faceDetected = false;
+let detectionTimer = null;
+
+
+/* =========================================================
+   FACE MODEL LOAD
+   ========================================================= */
+
+async function loadFaceModels() {
+
+  const status = document.getElementById("status");
+  const faceStatus = document.getElementById("faceStatus");
+
+  try {
+
+    status.innerText =
+      "⏳ Face Detection System load થઈ રહ્યું છે...";
+
+    faceStatus.innerText =
+      "Face Detection: Loading...";
+
+    const MODEL_URL =
+      "https://justadudewhohacks.github.io/face-api.js/models";
+
+    await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+
+    modelsLoaded = true;
+
+    faceStatus.innerText =
+      "✅ Face Detection Ready";
+
+    faceStatus.style.background = "#e8f5e9";
+
+  } catch (error) {
+
+    console.error("Face model error:", error);
+
+    modelsLoaded = false;
+
+    faceStatus.innerText =
+      "❌ Face Detection Model Load Failed";
+
+    faceStatus.style.background = "#ffebee";
+
+    status.innerText =
+      "❌ Face Detection શરૂ થઈ શક્યું નથી.";
+
+    throw error;
+  }
+}
+
+
+/* =========================================================
+   CAMERA START
+   ========================================================= */
+
 async function startCamera() {
 
   const status = document.getElementById("status");
@@ -130,63 +205,189 @@ async function startCamera() {
 
   try {
 
-    status.innerText = "Camera permission માંગવામાં આવી રહી છે...";
+    /*
+     * પહેલા Face Detection Model Load
+     */
+
+    if (!modelsLoaded) {
+      await loadFaceModels();
+    }
+
+    status.innerText =
+      "Camera permission માંગવામાં આવી રહી છે...";
 
     stream = await navigator.mediaDevices.getUserMedia({
+
       video: {
         facingMode: "user",
+
         width: {
           ideal: 1280
         },
+
         height: {
           ideal: 720
         }
       },
+
       audio: false
+
     });
 
     video.srcObject = stream;
 
     await video.play();
 
-    status.innerText = "✅ Camera ચાલુ છે. હવે Capture Photo દબાવો.";
+    status.innerText =
+      "✅ Camera ચાલુ છે. કૃપા કરીને ચહેરો camera સામે રાખો.";
 
     document.getElementById("startBtn").style.display = "none";
+
     document.getElementById("captureBtn").style.display = "block";
+
+    startFaceDetection();
 
   } catch (error) {
 
     console.error(error);
 
     status.innerText =
-      "❌ Camera ચાલુ થઈ શક્યો નથી. Browserમાં Camera Permission Allow કરો.";
+      "❌ Camera / Face Detection શરૂ થઈ શક્યું નથી.";
 
     alert(
-      "Camera ચાલુ થઈ શક્યો નથી.\n\n" +
-      "કૃપા કરીને Browserમાં Camera Permission = Allow કરો."
+      "Camera શરૂ થઈ શક્યો નથી.\n\n" +
+      "Browserમાં Camera Permission = Allow કરો.\n\n" +
+      "અને Internet connection ચાલુ રાખો."
     );
   }
 }
 
 
-function capturePhoto() {
+/* =========================================================
+   LIVE FACE DETECTION
+   ========================================================= */
+
+function startFaceDetection() {
 
   const video = document.getElementById("video");
-  const canvas = document.getElementById("canvas");
-  const preview = document.getElementById("preview");
-  const status = document.getElementById("status");
 
-  if (!video.videoWidth || !video.videoHeight) {
+  const faceStatus =
+    document.getElementById("faceStatus");
 
-    alert("Camera હજુ તૈયાર નથી. થોડી વાર રાહ જુઓ.");
+  if (detectionTimer) {
+    clearInterval(detectionTimer);
+  }
+
+  detectionTimer = setInterval(async function() {
+
+    if (!video.videoWidth || !video.videoHeight) {
+      return;
+    }
+
+    if (!modelsLoaded) {
+      return;
+    }
+
+    try {
+
+      const detection =
+        await faceapi.detectSingleFace(
+          video,
+          new faceapi.TinyFaceDetectorOptions({
+            inputSize: 320,
+            scoreThreshold: 0.5
+          })
+        );
+
+      if (detection) {
+
+        faceDetected = true;
+
+        faceStatus.innerText =
+          "✅ Face Detected — Photo લઈ શકાય છે";
+
+        faceStatus.style.background =
+          "#e8f5e9";
+
+        faceStatus.style.color =
+          "#1b5e20";
+
+      } else {
+
+        faceDetected = false;
+
+        faceStatus.innerText =
+          "⚠️ Face દેખાતો નથી — Camera સામે ચહેરો રાખો";
+
+        faceStatus.style.background =
+          "#fff3e0";
+
+        faceStatus.style.color =
+          "#e65100";
+      }
+
+    } catch (error) {
+
+      console.error(
+        "Face detection error:",
+        error
+      );
+
+    }
+
+  }, 700);
+}
+
+
+/* =========================================================
+   CAPTURE PHOTO
+   ========================================================= */
+
+function capturePhoto() {
+
+  const video =
+    document.getElementById("video");
+
+  const canvas =
+    document.getElementById("canvas");
+
+  const preview =
+    document.getElementById("preview");
+
+  const status =
+    document.getElementById("status");
+
+  /*
+   * Face હોવું જરૂરી
+   */
+
+  if (!faceDetected) {
+
+    alert(
+      "ચહેરો detect થયો નથી.\n\n" +
+      "કૃપા કરીને camera સામે સીધો ચહેરો રાખીને ફરી પ્રયાસ કરો."
+    );
 
     return;
   }
 
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
+  if (!video.videoWidth || !video.videoHeight) {
 
-  const context = canvas.getContext("2d");
+    alert(
+      "Camera હજુ તૈયાર નથી. થોડી વાર રાહ જુઓ."
+    );
+
+    return;
+  }
+
+  canvas.width =
+    video.videoWidth;
+
+  canvas.height =
+    video.videoHeight;
+
+  const context =
+    canvas.getContext("2d");
 
   context.drawImage(
     video,
@@ -196,72 +397,146 @@ function capturePhoto() {
     canvas.height
   );
 
-  capturedImage = canvas.toDataURL(
-    "image/jpeg",
-    0.85
-  );
+  capturedImage =
+    canvas.toDataURL(
+      "image/jpeg",
+      0.85
+    );
 
-  preview.src = capturedImage;
-  preview.style.display = "block";
+  preview.src =
+    capturedImage;
 
-  video.style.display = "none";
+  preview.style.display =
+    "block";
 
-  document.getElementById("captureBtn").style.display = "none";
-  document.getElementById("retakeBtn").style.display = "block";
-  document.getElementById("useBtn").style.display = "block";
+  video.style.display =
+    "none";
 
-  status.innerText = "✅ Photo Capture થઈ ગયો.";
+  document.getElementById(
+    "captureBtn"
+  ).style.display = "none";
+
+  document.getElementById(
+    "retakeBtn"
+  ).style.display = "block";
+
+  document.getElementById(
+    "useBtn"
+  ).style.display = "block";
+
+  document.getElementById(
+    "faceStatus"
+  ).innerText =
+    "✅ Face Capture Successful";
+
+  document.getElementById(
+    "faceStatus"
+  ).style.background =
+    "#e8f5e9";
+
+  status.innerText =
+    "✅ Face Photo Capture થઈ ગયો.";
 }
 
+
+/* =========================================================
+   RETAKE PHOTO
+   ========================================================= */
 
 function retakePhoto() {
 
-  const video = document.getElementById("video");
-  const preview = document.getElementById("preview");
-  const status = document.getElementById("status");
+  const video =
+    document.getElementById("video");
+
+  const preview =
+    document.getElementById("preview");
+
+  const status =
+    document.getElementById("status");
 
   capturedImage = null;
 
+  faceDetected = false;
+
   preview.src = "";
-  preview.style.display = "none";
 
-  video.style.display = "block";
+  preview.style.display =
+    "none";
 
-  document.getElementById("retakeBtn").style.display = "none";
-  document.getElementById("useBtn").style.display = "none";
-  document.getElementById("captureBtn").style.display = "block";
+  video.style.display =
+    "block";
 
-  status.innerText = "ફરીથી Photo Capture કરો.";
+  document.getElementById(
+    "retakeBtn"
+  ).style.display = "none";
+
+  document.getElementById(
+    "useBtn"
+  ).style.display = "none";
+
+  document.getElementById(
+    "captureBtn"
+  ).style.display = "block";
+
+  document.getElementById(
+    "faceStatus"
+  ).innerText =
+    "Face Detection: ફરી ચેક થઈ રહ્યું છે...";
+
+  document.getElementById(
+    "faceStatus"
+  ).style.background =
+    "#eeeeee";
+
+  status.innerText =
+    "ફરીથી camera સામે ચહેરો રાખો.";
 }
 
+
+/* =========================================================
+   USE PHOTO
+   ========================================================= */
 
 function usePhoto() {
 
   if (!capturedImage) {
 
-    alert("પહેલા Photo Capture કરો.");
+    alert(
+      "પહેલા Photo Capture કરો."
+    );
 
     return;
   }
 
   /*
-   * જો આ Camera Page Attendance Pageમાંથી
-   * નવી windowમાં ખોલવામાં આવ્યું હશે,
-   * તો Photo Attendance Pageને મોકલાશે.
+   * Camera Page Attendance / Registration
+   * Page ને photo મોકલે છે.
    */
 
   if (window.opener) {
 
     window.opener.postMessage(
+
       {
-        type: "ITI_VALOD_FACE_CAPTURE",
-        image: capturedImage
+        type:
+          "ITI_VALOD_FACE_CAPTURE",
+
+        image:
+          capturedImage,
+
+        faceDetected:
+          true
+
       },
+
       "*"
+
     );
 
-    document.getElementById("status").innerText =
-      "✅ Photo Attendance Page પર મોકલાઈ રહ્યો છે.";
+    document.getElementById(
+      "status"
+    ).innerText =
+      "✅ Face Photo Parent Page પર મોકલાઈ રહ્યો છે.";
 
     setTimeout(function() {
 
@@ -272,8 +547,7 @@ function usePhoto() {
   } else {
 
     /*
-     * હાલમાં standalone test માટે
-     * Photo browser storageમાં પણ રાખીએ છીએ.
+     * Standalone testing
      */
 
     localStorage.setItem(
@@ -281,29 +555,49 @@ function usePhoto() {
       capturedImage
     );
 
-    document.getElementById("status").innerText =
-      "✅ Photo Capture થયો અને Save થયો.";
+    document.getElementById(
+      "status"
+    ).innerText =
+      "✅ Face Photo Capture થયો અને Save થયો.";
 
     alert(
-      "Photo Capture સફળ થયો.\n\n" +
-      "આ Camera Test સફળ છે."
+      "Face Detection + Photo Capture સફળ છે.\n\n" +
+      "આ Step-1 Test સફળ છે."
     );
   }
 }
 
 
-window.addEventListener("beforeunload", function() {
+/* =========================================================
+   PAGE CLOSE
+   ========================================================= */
 
-  if (stream) {
+window.addEventListener(
+  "beforeunload",
+  function() {
 
-    stream.getTracks().forEach(function(track) {
+    if (detectionTimer) {
 
-      track.stop();
+      clearInterval(
+        detectionTimer
+      );
 
-    });
+      detectionTimer = null;
+    }
+
+    if (stream) {
+
+      stream
+        .getTracks()
+        .forEach(function(track) {
+
+          track.stop();
+
+        });
+    }
+
   }
-
-});
+);
 
 </script>
 
