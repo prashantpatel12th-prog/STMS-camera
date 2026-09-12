@@ -6,7 +6,6 @@
 
   <title>STMS Camera</title>
 
-  <!-- FACE API -->
   <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 
   <style>
@@ -152,6 +151,23 @@
 <script>
 
 /* =========================================================
+   CONFIGURATION
+========================================================= */
+
+/*
+ * IMPORTANT:
+ * Camera GitHub પર છે.
+ * Parent Attendance Google Apps Script પર છે.
+ */
+
+const ATTENDANCE_ORIGIN =
+  "https://script.google.com";
+
+const CAMERA_ORIGIN =
+  "https://prashantpatel12th-prog.github.io";
+
+
+/* =========================================================
    GLOBAL VARIABLES
 ========================================================= */
 
@@ -171,9 +187,6 @@ const FACE_MATCH_THRESHOLD = 0.55;
 
 const MODEL_URL =
   "https://justadudewhohacks.github.io/face-api.js/models";
-
-const ATTENDANCE_ORIGIN =
-  "https://prashantpatel12th-prog.github.io";
 
 
 /* =========================================================
@@ -226,29 +239,35 @@ const preview =
    PAGE START
 ========================================================= */
 
-window.addEventListener("load", async function() {
+window.addEventListener(
+  "load",
+  async function() {
 
-  if (cameraMode === "verification") {
+    if (
+      cameraMode ===
+      "verification"
+    ) {
 
-    status.innerText =
-      "🔐 Attendance Face Verification Mode";
+      status.innerText =
+        "🔐 Attendance Face Verification Mode";
 
-    faceStatus.innerText =
-      "⏳ Registered Faceની રાહ જોઈ રહ્યા છીએ...";
+      faceStatus.innerText =
+        "⏳ Registered Faceની રાહ જોઈ રહ્યા છીએ...";
 
-  } else {
+    } else {
 
-    status.innerText =
-      "📸 Face Registration Mode";
+      status.innerText =
+        "📸 Face Registration Mode";
 
-    faceStatus.innerText =
-      "⏳ Face AI Model લોડ થઈ રહ્યું છે...";
+      faceStatus.innerText =
+        "⏳ Face AI Model લોડ થઈ રહ્યું છે...";
+
+    }
+
+    await loadFaceModels();
 
   }
-
-  await loadFaceModels();
-
-});
+);
 
 
 /* =========================================================
@@ -283,14 +302,18 @@ async function loadFaceModels() {
     );
 
 
-    faceModelsLoaded = true;
+    faceModelsLoaded =
+      true;
 
 
     faceStatus.innerText =
       "✅ Face AI Ready";
 
 
-    if (cameraMode === "verification") {
+    if (
+      cameraMode ===
+      "verification"
+    ) {
 
       status.innerText =
         "Face System Ready. Registered Face receive થઈ રહ્યો છે...";
@@ -303,35 +326,49 @@ async function loadFaceModels() {
     }
 
 
-    startBtn.disabled = false;
+    startBtn.disabled =
+      false;
 
 
-    /* =====================================================
-       IMPORTANT:
-       Attendance Pageને READY signal
-    ===================================================== */
+    /*
+     * Attendance Pageને Camera Ready
+     */
 
     sendCameraReady();
 
 
     /*
-     * થોડા સમય પછી ફરી READY signal મોકલો.
-     * આ timing problemને solve કરે છે.
+     * Timing safety:
+     * Camera Ready signal ફરી મોકલીએ
      */
 
-    setTimeout(sendCameraReady, 500);
-    setTimeout(sendCameraReady, 1500);
-    setTimeout(sendCameraReady, 3000);
+    setTimeout(
+      sendCameraReady,
+      500
+    );
 
-  } catch (error) {
+    setTimeout(
+      sendCameraReady,
+      1500
+    );
+
+    setTimeout(
+      sendCameraReady,
+      3000
+    );
+
+
+  } catch(error) {
 
     console.error(
       "Face model loading error:",
       error
     );
 
+
     faceStatus.innerText =
       "❌ Face AI Model લોડ થઈ શક્યું નથી.";
+
 
     status.innerText =
       "Internet connection ચેક કરો અને ફરી પ્રયાસ કરો.";
@@ -351,19 +388,35 @@ function sendCameraReady() {
     return;
   }
 
-  window.opener.postMessage(
-    {
-      type: "ITI_VALOD_CAMERA_READY",
-      trainee: traineeKey
-    },
-    ATTENDANCE_ORIGIN
-  );
+
+  try {
+
+    window.opener.postMessage(
+      {
+        type:
+          "ITI_VALOD_CAMERA_READY",
+
+        trainee:
+          traineeKey
+      },
+
+      ATTENDANCE_ORIGIN
+    );
+
+  } catch(error) {
+
+    console.error(
+      "Camera Ready send error:",
+      error
+    );
+
+  }
 
 }
 
 
 /* =========================================================
-   RECEIVE REGISTERED FACE
+   RECEIVE MESSAGE FROM ATTENDANCE PAGE
 ========================================================= */
 
 window.addEventListener(
@@ -371,26 +424,40 @@ window.addEventListener(
   async function(event) {
 
     /*
-     * માત્ર Attendance Page પરથી આવેલ message
+     * IMPORTANT FIX:
+     *
+     * Registered Face Google Apps Script
+     * Attendance Page પરથી આવે છે.
+     *
+     * તેથી event.origin = script.google.com
      */
 
     if (
       event.origin !==
       ATTENDANCE_ORIGIN
     ) {
+
+      console.log(
+        "Ignored message from:",
+        event.origin
+      );
+
       return;
+
     }
 
 
     /*
-     * માત્ર Parent Attendance Window
+     * Message actual opener તરફથી જ હોવો જોઈએ
      */
 
     if (
       window.opener &&
       event.source !== window.opener
     ) {
+
       return;
+
     }
 
 
@@ -403,8 +470,14 @@ window.addEventListener(
     }
 
 
+    console.log(
+      "Message received:",
+      data.type
+    );
+
+
     /* =====================================================
-       REGISTERED FACE MESSAGE
+       REGISTERED FACE
     ===================================================== */
 
     if (
@@ -416,7 +489,9 @@ window.addEventListener(
         cameraMode !==
         "verification"
       ) {
+
         return;
+
       }
 
 
@@ -426,16 +501,12 @@ window.addEventListener(
           "❌ Registered Face મળ્યો નથી.";
 
         return;
+
       }
 
 
-      console.log(
-        "Registered Face received."
-      );
-
-
       /*
-       * Registered Image save
+       * Save Registered Face
        */
 
       registeredFaceData =
@@ -454,12 +525,13 @@ window.addEventListener(
       status.innerText =
         "🔐 Registered Face મળ્યો. Face Verification તૈયાર થઈ રહ્યું છે...";
 
+
       faceStatus.innerText =
         "⏳ Registered Face analyze થઈ રહ્યો છે...";
 
 
       /*
-       * Models ready છે તેની ખાતરી
+       * Face AI models ready હોવા જોઈએ
        */
 
       if (!faceModelsLoaded) {
@@ -471,10 +543,6 @@ window.addEventListener(
 
       }
 
-
-      /*
-       * Registered Faceમાંથી descriptor બનાવો
-       */
 
       try {
 
@@ -492,11 +560,14 @@ window.addEventListener(
           registeredDescriptor =
             null;
 
+
           faceStatus.innerText =
             "❌ Registered Photoમાં Face મળ્યો નથી.";
 
+
           status.innerText =
             "Registration Photo ફરીથી બનાવવી પડશે.";
+
 
           return;
 
@@ -527,28 +598,31 @@ window.addEventListener(
 
 
         /*
-         * Attendance Pageને confirm
+         * Attendance Pageને confirmation
          */
 
         sendRegisteredFaceReady();
 
 
         console.log(
-          "Registered Face Descriptor Ready."
+          "Registered Face Descriptor Ready"
         );
 
-      } catch (error) {
+
+      } catch(error) {
 
         console.error(
-          "Registered face processing error:",
+          "Registered Face processing error:",
           error
         );
+
 
         registeredFaceReceived =
           false;
 
         registeredDescriptor =
           null;
+
 
         faceStatus.innerText =
           "❌ Registered Face process થઈ શક્યો નથી.";
@@ -562,7 +636,7 @@ window.addEventListener(
 
 
 /* =========================================================
-   REGISTERED FACE READY RESPONSE
+   REGISTERED FACE READY
 ========================================================= */
 
 function sendRegisteredFaceReady() {
@@ -570,6 +644,7 @@ function sendRegisteredFaceReady() {
   if (!window.opener) {
     return;
   }
+
 
   window.opener.postMessage(
     {
@@ -587,75 +662,78 @@ function sendRegisteredFaceReady() {
 
 
 /* =========================================================
-   GET FACE DESCRIPTOR FROM IMAGE
+   GET FACE DESCRIPTOR
 ========================================================= */
 
 async function getFaceDescriptorFromImage(
   imageData
 ) {
 
-  return new Promise(function(resolve) {
+  return new Promise(
+    function(resolve) {
 
-    const img =
-      new Image();
-
-
-    img.onload =
-      async function() {
-
-        try {
-
-          const detection =
-            await faceapi
-              .detectSingleFace(
-                img,
-                new faceapi.TinyFaceDetectorOptions({
-                  inputSize: 320,
-                  scoreThreshold: 0.5
-                })
-              )
-              .withFaceLandmarks()
-              .withFaceDescriptor();
+      const img =
+        new Image();
 
 
-          if (!detection) {
+      img.onload =
+        async function() {
+
+          try {
+
+            const detection =
+              await faceapi
+                .detectSingleFace(
+                  img,
+                  new faceapi.TinyFaceDetectorOptions({
+                    inputSize: 320,
+                    scoreThreshold: 0.5
+                  })
+                )
+                .withFaceLandmarks()
+                .withFaceDescriptor();
+
+
+            if (!detection) {
+
+              resolve(null);
+
+              return;
+
+            }
+
+
+            resolve(
+              detection.descriptor
+            );
+
+
+          } catch(error) {
+
+            console.error(
+              error
+            );
 
             resolve(null);
 
-            return;
-
           }
 
+        };
 
-          resolve(
-            detection.descriptor
-          );
 
-        } catch (error) {
-
-          console.error(
-            error
-          );
+      img.onerror =
+        function() {
 
           resolve(null);
 
-        }
-
-      };
+        };
 
 
-    img.onerror =
-      function() {
+      img.src =
+        imageData;
 
-        resolve(null);
-
-      };
-
-
-    img.src =
-      imageData;
-
-  });
+    }
+  );
 
 }
 
@@ -677,26 +755,24 @@ async function startCamera() {
   }
 
 
-  /*
-   * Verification Modeમાં Registered Face ફરજિયાત
-   */
-
   if (
-    cameraMode === "verification" &&
+    cameraMode ===
+    "verification" &&
     !registeredDescriptor
   ) {
 
     /*
-     * હવે તરત error આપવાને બદલે
-     * Parent Pageને ફરી Registered Face મોકલવા કહીએ
+     * Parent Attendance Pageને ફરી Ready signal
      */
 
     sendCameraReady();
+
 
     alert(
       "Registered Face હજુ તૈયાર નથી.\n\n" +
       "થોડી વાર રાહ જુઓ અને ફરી પ્રયાસ કરો."
     );
+
 
     return;
 
@@ -715,7 +791,8 @@ async function startCamera() {
 
           video: {
 
-            facingMode: "user",
+            facingMode:
+              "user",
 
             width: {
               ideal: 1280
@@ -754,7 +831,8 @@ async function startCamera() {
     captureBtn.style.display =
       "block";
 
-  } catch (error) {
+
+  } catch(error) {
 
     console.error(
       error
@@ -807,10 +885,6 @@ async function capturePhoto() {
     "🔍 Face Detection ચાલુ છે...";
 
 
-  /*
-   * LIVE VIDEO FACE COUNT
-   */
-
   const detections =
     await faceapi.detectAllFaces(
       video,
@@ -829,11 +903,14 @@ async function capturePhoto() {
     faceStatus.innerText =
       "❌ Face મળ્યો નથી.";
 
+
     status.innerText =
       "Camera સામે તમારો ચહેરો સ્પષ્ટ રાખો.";
 
+
     captureBtn.disabled =
       false;
+
 
     return;
 
@@ -847,11 +924,14 @@ async function capturePhoto() {
     faceStatus.innerText =
       "❌ એક કરતાં વધારે Face મળ્યા.";
 
+
     status.innerText =
       "Camera સામે માત્ર એક જ વ્યક્તિ હોવી જોઈએ.";
 
+
     captureBtn.disabled =
       false;
+
 
     return;
 
@@ -864,6 +944,7 @@ async function capturePhoto() {
 
   canvas.width =
     video.videoWidth;
+
 
   canvas.height =
     video.videoHeight;
@@ -891,6 +972,7 @@ async function capturePhoto() {
 
   preview.src =
     capturedImage;
+
 
   preview.style.display =
     "block";
@@ -951,17 +1033,22 @@ async function capturePhoto() {
     faceVerified =
       false;
 
+
     faceStatus.innerText =
       "❌ Registered Face હજુ તૈયાર નથી.";
+
 
     status.innerText =
       "Attendance Page પરથી Registered Face ફરી મોકલો.";
 
+
     useBtn.style.display =
       "none";
 
+
     captureBtn.disabled =
       false;
+
 
     return;
 
@@ -986,6 +1073,7 @@ async function capturePhoto() {
 
     faceVerified =
       false;
+
 
     faceVerificationDistance =
       null;
@@ -1130,7 +1218,7 @@ function sendFaceVerificationResult(
 
 
 /* =========================================================
-   RETAKE PHOTO
+   RETAKE
 ========================================================= */
 
 function retakePhoto() {
@@ -1218,10 +1306,6 @@ function usePhoto() {
   }
 
 
-  /*
-   * Verification modeમાં Face Match ફરજિયાત
-   */
-
   if (
     cameraMode ===
     "verification" &&
@@ -1249,10 +1333,7 @@ function usePhoto() {
           capturedImage,
 
         faceVerified:
-          cameraMode ===
-          "verification"
-            ? true
-            : true,
+          true,
 
         distance:
           faceVerificationDistance,
@@ -1281,19 +1362,13 @@ function usePhoto() {
 
   } else {
 
-    /*
-     * Standalone test
-     */
-
     localStorage.setItem(
       "ITI_VALOD_FACE_CAPTURE",
       capturedImage
     );
 
 
-    document.getElementById(
-      "status"
-    ).innerText =
+    status.innerText =
       "✅ Photo Capture થયો અને Save થયો.";
 
 
